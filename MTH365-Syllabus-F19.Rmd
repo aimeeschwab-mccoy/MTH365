@@ -1,0 +1,147 @@
+---
+title: 'MTH 365: Introduction to Data Science'
+author: "Syllabus: Fall 2019"
+date: "Last updated: `r Sys.Date()`"
+output: pdf_document
+---
+
+### Instructor Contact Information
+
+- Aimee Schwab-McCoy, Ph.D
+-	Email: aimeeschwab-mccoy@creighton.edu
+-	Office location: Hixson-Lied 545
+
+### Course Meetings
+
+-	TR 12:30-1:45 pm
+-	Hixson-Lied 518
+
+### Office Hours
+
+
+Regular weekly office hours will be held:
+
+Day|Time
+---|---
+Monday|10:00 am-12:00 pm
+Wednesday|1:00 pm-3:00 pm
+
+Appointments outside these time slots may be made through email at least 24 hours in advance. Any changes to regular office hours will be posted on BlueLine.
+
+### Course Description and Objectives 
+
+Intro to statistical data science, using computing tools to gather, manage and analyze large and complex data sets. Topics include data wrangling and formatting, web scraping, data analysis, statistical modeling techniques, text mining and language processing. 
+
+MTH 365 also addresses Department of Mathematics Learning Objectives 2 and 4.
+
+- Objective 2. Communication in Mathematics: The ability to communicate effectively in both oral and written forms while applying their mathematical skills. Students will learn the basic language of proof and counterexample. Students will organize and present significant ideas and calculations in written form.
+- Objective 4. Breadth and Depth: Students will develop an awareness of the breadth and depth of mathematics. This will include an awareness of historical and contemporary contexts in which mathematics is practiced. They will develop critical perspectives of the inherent limitations of the discipline.
+
+### Required Textbook 
+
+The required book for this course is listed below. All students should have access to either a physical or e-copy of the textbook. 
+
+- Baumer, _Modern Data Science with R_ (ISBN-13: 978-1498724487).
+
+Additional resources include:
+
+- _R for Data Science_ by Hadley Wickham (available online at https://r4ds.had.co.nz/)
+- _RMarkdown: The Definitive Guide_ by Yihue Xi (available online at https://bookdown.org/yihui/rmarkdown/)
+- _Foundations of Data Science_ by Blum, Hopcroft, and Kannon (available online at https://www.cs.cornell.edu/jeh/book.pdf)
+- _Modern Dive: Statistical Inference via Data Science_ by Ismay and Kim (available online at http://www.moderndive.com)
+
+Articles and additional resources will be posted to the Resources page on BlueLine.
+
+### Course Outline
+
+There are six major topics in Introduction to Data Science:
+
+1. Data wrangling and formatting using the tidyverse set of R libraries.
+2. Exploratory data analysis, including data visualization using ggplot2.
+3. Data acquisition using web-scraping and APIs.
+4. Statistical modeling and inference.
+5. Machine learning.
+6. Text mining and language processing.
+7. Reproducible research and dynamic programming using R/RStudio/RShiny/GitHub.
+
+We’ll work through many of these topics simultaneously. This class is all about building skills and techniques to begin your data science journey.
+
+### Weekly Announcements and BlueLine 
+
+All students are expected to check the Weekly Announcements before Tuesday’s class meeting. BlueLine will be your main resource for class notes, data sets, software resources, and assignments.
+
+The exception to this policy is email. Please use email for communication with Dr. Schwab-McCoy rather than BlueLine messaging. The notification system in BlueLine can be laggy, and you may not receive a prompt response.
+
+### Course Assessment 
+
+Your grade in MTH 365 will contain the following components.
+
+1. Weekly Labs (50%): Each Thursday we'll start a lab designed to explore new techniques for working with data. These labs are designed to take about 2-3 hours to complete, so you'll most likely need to finish them outside of class. Labs are due in BlueLine the following week.
+2. Class Participation (5%): In MTH 365, class participation means being actively involved and engaged in completing labs and practice exercises during class time. Participation points will be awarded on a three point scale every week.
+3. Mini-Projects (15%): There will be three Mini-Projects assigned during the course. Mini-Projects will be due on September 27, October 25, and November 26.
+4. Final Project (30%): Your Final Project will represent a complete exploration of a large-scale data project, suitable for use in a portfolio of your work. Final Projects are due on Thursday, December 12. The Final Project is in lieu of a Final Exam.
+
+All assignments must be readable, and when appropriate, all work must be shown to receive credit. Late work will receive a 25% deduction per calendar day, with no work accepted more than 3 calendar days after the deadline (unless other arrangements have been made _before_ the due date). 
+
+All exams and in-class work must be completed at the scheduled time. A missed exam or quiz will result in a score of zero unless you contact me before class with a note from your advisor, physician, organization, or coach stating explicit reasons for your absence. 
+
+Adjustments may be made in extraordinary circumstances.
+
+### Course Grade 
+
+Final course grades will be determined according to the following scale.
+
+Letter Grade|Weighted Score
+---|---
+A|93-100%
+A-|90-92.99%
+B+|87-89.99%
+B|83-86.99%
+B-|80-82.99%
+C+|77-79.99%
+C|73-76.99%
+C-|70-72.99%
+D|60-69.99%
+F|<59.99%
+
+The grade cutoffs may be shifted _downward_ at the end of the semester based on student performance (never upward).
+
+### Class Preparation 
+
+Students should come to each class meeting prepared to write and talk intelligently about the material. This means watching any required videos or reading any required materials before class. The assignments will require thought and analysis, which cannot be had in 15 minutes or less. Give yourself adequate time to read carefully, to think and reflect, to sleep on it, then maybe glance it over before class.
+
+### Computing and Software 
+
+Computing is an essential part of modern statistical practice: __meaningful data science is impossible without computing__. We will be using the open-source statistical computing language R and user interface program RStudio to graph probability distributions, calculate probabilities, demonstrate theoretical results, and investigate complex problems. __You should plan to bring a charged laptop to class every day.__
+
+### Attendance Policy 
+
+All students are expected to come to class prepared to learn and actively participate. However, if you must be absent check BlueLine for assignments, announcements, and any other information you may have missed.
+
+### Cancellation of Class 
+
+Generally speaking, if the University is open, you can expect class to meet. But, should we have to cancel class for inclement weather, an announcement will be made at least 45 minutes before the start of class via (1) email to the entire class and (2) a posted announcement on BlueLine. If an assignment is scheduled for that day, the new due date will be included in the message. All of this is contingent upon the availability of electricity. The University Weather Hotline is 402-280-5800.
+
+Rarely, it may be necessary to cancel a class on rather short notice. In that case, the procedure above will be followed or another professor will make an announcement at the start of class. In this case, assignments will not be cancelled or postponed.
+
+### Academic Honesty 
+
+This course is governed by the Policy on Academic Honesty of the College of Arts and Science. The CCAS policy on academic honesty can be found at the link below.
+https://www.creighton.edu/fileadmin/user/CCAS/curriculum/CCAS_Academic_Honesty_Policy_.pdf
+
+You are encouraged to work together on homework labs and in-class activities, but all work you submit must be your own (unless the assignment specifically states otherwise). A first act of academic dishonesty will result in a score of zero on the item in question. A subsequent offense will result in an F for the course. Students should consult the Academic Honesty Procedures if they have any questions.
+
+### Important University Dates
+
+- Aug. 21 (Wed): Fall semester begins.
+- Aug. 27 (Tues): Last day for registration, adding courses.
+- Aug. 30 (Fri): Last day to drop individual courses from schedule.
+- Sept. 2 (Mon): Labor Day Holiday. No classes.
+- Sept. 11 (Wed): Mass of the Holy Spirit, 11:00am at St. John’s Church. 11:00am classes cancelled.
+- Sept. 17 (Tues): Last day to apply for Pass/No Pass status. Last day to change from credit to audit.
+- Oct. 13-20 (Sun -Sun): Fall Recess. No classes.
+- Oct. 15 (Tues): Last day to file on-line Degree Application for December degree conferral.
+- Nov. 8 (Fri): Last day to withdraw from courses with a grade of “W.”
+- Nov. 27 -Dec. 1 (Wed -Sun): Thanksgiving Recess. No classes.
+- Dec. 9-14 (Mon -Sat): Final semester examinations.
+- Dec. 14 (Sat): December Degree Conferral Date.
