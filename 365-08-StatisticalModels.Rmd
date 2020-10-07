@@ -1,0 +1,413 @@
+---
+title: 'Section 8: Statistical Models'
+author: 'MTH 365: Introduction to Data Science'
+date: "Updated `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: "style.css"
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: false
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 7: Statistical Foundations
+
+For additional background/refreshers: _OpenIntro Statistics, 3rd Edition_ (available on BlueLine or openintro.org))
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+library(skimr)
+```
+
+---
+
+## Explaining variation
+
+__Statistical models__: models that attempt to explain the variability in a data set by expressing one or more response variables as a _function_ of one or more explanatory variables
+
+<p style="color:#e41a1c";>__Example__:</p>  What variables could be used in a model to _explain_ arrival delays?
+
+---
+
+## Explaining variation
+
+Consider a random sample of 1000 flights from New York City to Chicago in 2013.
+
+```{r}
+library(nycflights13)
+Chicago1000 <- flights %>%
+  filter(dest %in% c('ORD', 'MDW'), !is.na(arr_delay)) %>%
+  sample_n(size=1000)
+
+Chicago1000 %>% skim(arr_delay)
+```
+
+---
+
+## Explaining variation: Linear model
+
+- `geom_smooth(method='lm')`
+
+```{r, echo=FALSE, fig.height=5}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay)) +
+  geom_point(alpha=0.5) + 
+  geom_smooth(method='lm') + 
+  labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)')
+```
+
+---
+
+## Explaining variation: Loess model
+
+"Loess" stands for: __lo__ cally __e__ stimated __s__ catterplot __s__ moothing
+
+- `geom_smooth(method='loess')`
+
+```{r, echo=FALSE, fig.height=5}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay)) + 
+  geom_point(alpha=0.5) + 
+  geom_smooth(method='loess') + 
+  labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)')
+```
+
+---
+
+## Explaining variation: Loess model
+
+`span`: what proportion of the points should we use?
+
+- `geom_smooth(method='loess', span=0.75)`
+
+```{r, echo=FALSE, fig.height=5}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay)) + 
+  geom_point(alpha=0.5) + 
+  geom_smooth(method='loess', span=0.75) + 
+  labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)')
+```
+
+---
+
+## Explaining variation: Loess model
+
+`span`: what proportion of the points should we use?
+
+- `geom_smooth(method='loess', span=0.5)`
+
+```{r, echo=FALSE, fig.height=5}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay)) + 
+  geom_point(alpha=0.5) + 
+  geom_smooth(method='loess', span=0.5) + 
+  labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)')
+```
+
+---
+
+## Explaining variation: Loess model
+
+`span`: what proportion of the points should we use?
+
+- `geom_smooth(method='loess', span=0.25)`
+
+```{r, echo=FALSE, fig.height=5, warning=FALSE}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay)) + 
+  geom_point(alpha=0.5) + 
+  geom_smooth(method='loess', span=0.25) + 
+  labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)')
+```
+
+---
+
+## Linear model
+
+$$Y_i = \beta_0 + \beta_1 X_i + \epsilon_i$$
+
+where:
+
+- $Y_i$ is the _response variable_
+- $X_i$ is the _explanatory variable_
+- $\beta_0$ is the y-intercept
+- $\beta_1$ is the slope
+- $\epsilon_i \sim Normal(0, \sigma^2)$ represents the _random error_
+
+---
+
+## Linear model
+
+<p style="color:#e41a1c";>__Example__:</p> Write the fitted linear model for predicting arrival delay based on departure time rounded to the nearest hour.
+
+```{r}
+model <- lm(arr_delay~hour, data=Chicago1000)
+model
+```
+
+---
+
+## Linear model
+
+```{r}
+summary(model)
+```
+
+---
+
+## Quadratic model
+
+```{r}
+Chicago1000 <- Chicago1000 %>% mutate(hour2=hour^2)
+model2 <- lm(arr_delay~hour+hour2, data=Chicago1000)
+model2
+```
+
+---
+
+## Quadratic model
+
+```{r}
+summary(model2)
+```
+
+---
+
+## Quadratic model
+
+```{r, echo=FALSE}
+Chicago1000 %>%
+  ggplot(aes(x=hour, y=arr_delay))+geom_point(alpha=0.5)+
+      stat_smooth(method = "lm", formula = y ~ x + I(x^2), size = 1)+labs(x='Scheduled departure (hour)', y='Arrival delay (minutes)') 
+```
+
+---
+
+## Explaining variation
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+Chicago1000 %>% ggplot(aes(x=carrier, y=arr_delay))+geom_boxplot(aes(fill=carrier))+
+  theme(legend.position="none")
+```
+
+---
+
+## Analysis of variance (ANOVA)
+
+$$Y_{ij} = \mu + \alpha_i + \epsilon_{ij}$$
+
+where:
+
+- $Y_{ij$ is the $j^{th}$ observation of the _response variable_ in group $i$
+- $\mu$ is the overall _grand mean_
+- $\alpha_i$ is the _group effect_ from membership in "group $i$"
+- $\epsilon_{ij} \sim Normal(0, \sigma^2)$ represents the _random error_
+
+---
+
+## Analysis of variance (ANOVA)
+
+<p style="color:#e41a1c";>__Example__:</p>  What about carrier?
+
+```{r}
+model3 <- aov(arr_delay~carrier, data=Chicago1000)
+summary(model3)
+```
+
+---
+
+## Analysis of variance (ANOVA)
+
+```{r}
+model.tables(model3, 'means')
+```
+
+---
+
+## Statistical signficance
+
+__Null hypothesis significance testing__ (NHST):
+
+1. Start with a null hypothesis (no change/effect, $H_0$) to compare against an alternative hypothesis (significant change/effect, $H_A$).
+2. Based on the observed data, calculate a test statistic.
+3. The test statistic will be different depending on the target parameter/sample properties, so _translate the test statistic into a p-value_.
+4. Based on the p-value, decide whether or not to reject $H_0$.
+
+---
+
+## Statistical signficance
+
+__p-value__: the probability of observing a sample statistic as or more unusual ("extreme") as the one observed in the data, assuming $H_0$ is true
+
+There are two possible explanations for a small p-value:
+
+1. Unusual sample (small p-value is due to random chance)
+2. False $H_0$
+
+---
+
+## Statistical significance
+
+When the p-value is "small enough" to reject $H_0$, we say there is __statistical signficance__.
+
+- How small is "small enough"?
+
+---
+
+## Statistical signficance
+
+<p style="color:#e41a1c";>__Example__:</p>  What about carrier?
+
+```{r}
+model3 <- aov(arr_delay~carrier, data=Chicago1000)
+summary(model3)
+```
+
+---
+
+## Practical significance
+
+<p style="color:#e41a1c";>__Example__:</p>  If the difference in average delay times per carrier _practically significant_?
+
+```{r}
+model.tables(model3, 'means')
+```
+
+---
+
+## Confounding
+
+> "Correlation does not equal causation."
+
+In other words, just because there is a "statistically significant relationship" between $x$ and $y$, it doesn't mean that $x$ is _causing_ changes in $y$.
+
+---
+
+## Confounding
+
+Other factors may affect (_confound_) the relationship between two variables.
+
+- Use randomized experiments (ex: "A/B tests" to compare two conditions)
+- Control external factors
+- Use matching or case-control studies to "balance" for other factors
+
+---
+
+## Carrier as a confounder?
+
+<p style="color:#e41a1c";>__Example__:</p>  Does carrier confound the relationship between arrival delay and hour?
+
+```{r}
+Chicago1000 %>% ggplot(aes(x=hour, y=arr_delay))+geom_point()+geom_smooth(method='lm')+aes(color=carrier)
+```
+
+---
+
+## Other confounders?
+
+<p style="color:#e41a1c";>__Example__:</p> Choose some other possible confounders, and try them out. Try some other explanatory variables too. Can you find a good possible model for predicting arrival delay?
+
+```{r}
+names(Chicago1000)
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r}
+glimpse(SAT_2010)
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r, eval=FALSE}
+SAT_2010 <- mutate(SAT_2010, Salary=salary/1000)
+SAT_2010 %>% ggplot(aes(x=Salary, y=total))+
+  geom_point()+geom_smooth(method='lm')+
+  labs(x='Average salary ($K)', y='Average SAT total')
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r, echo=FALSE}
+SAT_2010 <- mutate(SAT_2010, Salary=salary/1000)
+SAT_2010 %>% ggplot(aes(x=Salary, y=total))+geom_point()+geom_smooth(method='lm')+labs(x='Average salary ($K)', y='Average SAT total')
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r}
+SAT_model1 <- lm(total~Salary, data=SAT_2010)
+summary(SAT_model1)
+```
+
+---
+
+## SAT scores and teacher salaries
+
+<p style="color:#e41a1c";>__Example__:</p>  Possible confounding variables?
+
+```{r}
+names(SAT_2010)
+```
+
+---
+
+## SAT scores and teacher salaries
+
+How many students are actually taking the SAT?
+
+```{r}
+favstats(~sat_pct, data=SAT_2010)
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r}
+SAT_2010 <- SAT_2010 %>% 
+  mutate(SAT_grp=ifelse(sat_pct<=6, 'Q1', 
+                        ifelse(sat_pct <= 27, 'Q2', 
+                               ifelse(sat_pct <= 68, 'Q3', 
+                                      'Q4'))))
+glimpse(SAT_2010[,9:11])
+```
+
+---
+
+## SAT scores and teacher salaries
+
+```{r, echo=FALSE}
+SAT_2010 %>% ggplot(aes(x=Salary, y=total))+geom_point()+geom_smooth(method='lm')+labs(x='Average salary ($K)', y='Average SAT total')+aes(color=SAT_grp)
+```
+
+---
+
+## Predicting teacher salaries?
+
+```{r}
+SAT_2010 %>% ggplot(aes(x=expenditure, y=Salary)) + geom_point()
+```
+
+---
+
+## Predicting teacher salaries?
+
+<p style="color:#e41a1c";>__Example__:</p> Test your knowledge so far.
+
+1. Based on the plot, estimate reasonable values for the slope and intercept of a linear model to predict teacher salary based on state expenditures on education.
+2. Fit that linear model. Is the linear model "statistically significant"?
+3. How much of the variation in teacher salary can be "explained" using the linear model? (Look at your Mini-Project 3 instructions for a clue.)

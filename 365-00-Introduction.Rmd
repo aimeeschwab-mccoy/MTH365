@@ -1,0 +1,234 @@
+---
+title: 'What Have I Gotten Myself Into?'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r Sys.Date()`"
+output: 
+  ioslides_presentation:
+    widescreen: true
+---
+
+## Outline
+
+First...
+
+- Course overview
+- Technology and expectations
+
+Second...
+
+- Investigation (aka the fun stuff)
+
+## Course overview
+
+1. __Data wrangling and formatting__ using the `tidyverse` set of R libraries.
+2. __Exploratory data analysis__, including data visualization using ggplot2.
+3. __Data acquisition__ using web-scraping and APIs.
+4. __Statistical modeling__ techniques such as regression models and simulation-based inference.
+5. __Machine learning__ techniques such as clustering and random forests.
+5. __Text mining__ and language processing.
+6. __Reproducible research and dynamic programming__ using R/RStudio/RShiny.
+
+## Technology
+
+Modern data science is literally not possible without technology! We'll use a variety of tools this semester:
+
+1. R (https://cran.r-project.org/)
+2. RStudio (https://www.rstudio.com/)
+3. `tidyverse` (https://www.tidyverse.org/)
+
+## R (https://cran.r-project.org/)
+
+`R` is an open-source programming language for statistical computing and graphics. 
+
+```{r, echo=FALSE, out.width = '50%'}
+knitr::include_graphics("Images/R.png")
+```
+
+- Why not Python?
+
+## RStudio (https://www.rstudio.com/)
+
+RStudio is a free graphical user interface for using R.
+
+```{r, echo=FALSE, out.width = '50%'}
+knitr::include_graphics("Images/RStudio.png")
+```
+
+- `R` and RStudio should already be installed on your computers... we'll use it today!
+
+## `tidyverse` (https://www.tidyverse.org/)
+
+The `tidyverse` is an "opinionated" collection of R packages designed for data science. 
+
+```{r, echo=FALSE, out.width = '20%'}
+knitr::include_graphics("Images/tidyverse.png")
+```
+
+- All packages share an underlying design philosophy, grammar, and data structures. 
+- The `tidyverse` is incredibly popular among data scientists!
+
+Warning! It may look strange at first if you've programmed in R before.
+
+## How to make friends and succeed in Data Science
+
+1. _Actively follow along!_ RMarkdown documents will be provided for you each week - use these to take notes and run code "live" in class.
+2. _Ask questions!_ This is new for everyone, no question is a bad question.
+3. _When you don't know if something will work, try it!_ Experimentation is key in this class.
+4. _BRING YOUR COMPUTER._ Charged, everyday. Especially on Thursdays.
+
+----
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/rise_data_scientists.png")
+```
+
+## Data Science Venn diagram
+
+```{r, echo=FALSE, out.width = '80%'}
+knitr::include_graphics("Images/danger_zone.png")
+```
+
+## Why data science?
+
+<div class="blue">__Data Science__: </div>
+
+the science of extracting meaningful information from data
+
+> Computer science is more than just programming; it is the creation of appropriate abstractions to express computational structures and the development of algorithms that operate on those abstractions. Similarly, statistics is more than just collections of estimators and tests; it is the interplay of general notions of sampling, models, distributions, and decision-making. [Data science] is based on the idea that these styles of thinking support each other. - Michael Jordan, UC Berkeley
+
+## Baby names over time
+
+The `R` package `babynames` provides data about the popularity of individual baby names from the US Social Security Administration. Data includes all names used at least 5 times in a year beginning in 1880.
+
+```{r}
+#install.packages(babynames)
+library(babynames)
+```
+
+## Baby names over time
+
+```{r}
+babynames
+```
+
+## Baby names over time
+
+Let's track the popularity of a particular name: _Aimee_.
+
+```{r, eval=FALSE}
+library(tidyverse)
+babynames %>% filter(name=='Aimee')
+```
+
+## Baby names over time
+
+Let's track the popularity of a particular name: _Aimee_.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+babynames %>% filter(name=='Aimee')
+```
+
+## Baby names over time
+
+```{r, eval=FALSE}
+filtered_names <- babynames %>% filter(name=='Aimee')
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_point()
+```
+
+## Baby names over time
+
+```{r, echo=FALSE}
+filtered_names <- babynames %>% filter(name=='Aimee')
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_point()
+```
+
+## Baby names over time
+
+```{r, eval=FALSE}
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_point(aes(colour=sex))
+```
+
+## Baby names over time
+
+```{r, echo=FALSE}
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_point(aes(colour=sex))
+```
+
+## Baby names over time
+
+```{r, eval=FALSE}
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Aimee')
+```
+
+## Baby names over time
+
+```{r, echo=FALSE}
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Aimee')
+```
+
+## Baby names over time
+
+But my name is spelled weird. What if we add "Amy"?
+
+```{r, eval=FALSE}
+filtered_names2 <- babynames %>% filter(name %in% c('Aimee', 'Amy'))
+ggplot(data=filtered_names2, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Aimee/Amy')
+```
+
+## Baby names over time
+
+But my name is spelled weird. What if we add "Amy"?
+
+```{r, echo=FALSE}
+filtered_names2 <- babynames %>% filter(name %in% c('Aimee', 'Amy'))
+ggplot(data=filtered_names2, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Aimee/Amy')
+```
+
+## Baby names over time
+
+<div class="red">__Example__: </div>
+
+What other names should we try?
+
+\vfill
+
+```{r, eval=FALSE}
+# What needs to change?
+filtered_names <- babynames %>% filter(name %in% c('Aimee'))
+ggplot(data=filtered_names, aes(x=year, y=prop)) + 
+  geom_line(aes(colour=sex)) + xlab('Year') +
+  ylab('Prop. of Babies Named Aimee') 
+```
+
+Take 5-10 minutes to try some names with a partner, and identify trends in the data.
+
+## Baby names over time: _Arya_
+
+```{r, echo=FALSE}
+filtered_names <- babynames %>% filter(name %in% c('Arya'))
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Arya') + geom_curve(x=2011, xend=2000, y=0.0002, yend=0.0007, colour='darkgrey') + geom_text(x=1995, y=0.0007, label='First episode of \n "Game of Thrones"', colour='black') + geom_curve(x=1996, xend=1990, y=0.00003, yend=0.0004, colour='darkgrey') + geom_text(x=1990, y=0.0005, label='"A Song of Ice and Fire" \n is published', colour='black')
+```
+
+## Baby names over time: _Link_
+
+```{r, echo=FALSE}
+filtered_names <- babynames %>% filter(name %in% c('Link'))
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Link')
+```
+
+## Baby names over time: _Bella_
+
+```{r, echo=FALSE}
+filtered_names <- babynames %>% filter(name %in% c('Bella'))
+ggplot(data=filtered_names, aes(x=year, y=prop)) + geom_line(aes(colour=sex)) + xlab('Year') + ylab('Prop. of Babies Named Bella')
+```
+
+# 
+
+<div class=white>Before our next class meeting: 
+
+1. Install R (https://cran.r-project.org/) if you haven't yet
+2. Install RStudio Desktop Open Source (https://www.rstudio.com/products/rstudio/#Desktop) if you haven't yet
+
+</div>

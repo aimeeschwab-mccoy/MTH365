@@ -1,0 +1,629 @@
+---
+title: 'Section 10: k-Nearest Neighbors and Classification'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: ["style.css", 'hygge']
+    lib_dir: libs
+    nature:
+      highlightStyle: magula
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 8: Statistical Learning and Predictive Analytics
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+library(RColorBrewer)
+```
+
+---
+
+## "Lazy" learning
+
+So far we've focused on building models that can predict outcomes on a new set of data. Another approach is to just be _lazy_!
+
+.full-width[.content-box-yellow[__Lazy learning__: predict outcomes without constructing a "model"]]
+
+- How does that work?
+
+---
+
+## k-nearest neighbors
+
+.red[Example]: Consider the data set below - describe the relationship between x and y.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+set.seed(365)
+x1 <- runif(min=0.1, max=0.5, n=20)
+x2 <- runif(min=0.3, max=0.7, n=20)
+x3 <- runif(min=0.5, max=0.9, n=20)
+y1 <- runif(min=0.5, max=0.7, n=20)
+y2 <- runif(min=0.4, max=0.6, n=20)
+y3 <- runif(min=0.2, max=0.5, n=20)
+x <- c(x1, x2, x3)
+y <- c(y1, y2, y3)
+group <- c(rep('A', 20), rep('B', 20), rep('C', 20))
+data <- as.data.frame(cbind(x, y, group))
+colnames(data) <- c('x', 'y', 'group')
+data$x <- as.numeric(data$x)
+data$y <- as.numeric(data$y)
+ggplot(data, aes(x=x, y=y))+geom_point()
+```
+
+---
+
+## k-nearest neighbors
+
+.red[Example]: What if the data points belonged to three different groups, like this?
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+ggplot(data, aes(x=x, y=y, group=group))+geom_point(aes(col=group,pch=group))+scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k-nearest neighbors
+
+.red[Example]: How should a new data point, $(20, 50)$ be classified? 
+
+What about $(40, 20)$?
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+new.points <- data.frame(x = c(20, 40), y = c(50, 20), group=c('Point 1', 'Point 2'))
+data.new <- rbind(data, new.points)
+ggplot(data.new, aes(x=x, y=y, group=group))+geom_point(aes(col=group, pch=group))+scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k-nearest neighbors
+
+.full-width[.content-box-yellow[__k-nearest neighbor__: assume that points that are "close" to each other have similar outcomes.]]
+
+For a positive integer $k$, classify a new observation $x^*$ by:
+
+1. Finding the $k$ observations in the training data $(\bf{X}, y)$ that are closest to $x^*$ using some distance measure. Call this $D(x^*)$.
+
+    - Usually Euclidean ("right triangle") distance.
+
+2. For some aggregate function $f$, compute $f(y)$ for the $k$ values of $y$ in $D(x^*)$, and assign this value $(y^*)$ as the predicted value of the repsonse associated with $x^*$. The idea is that since $x^*$ is similar to the $k$ observations in $D(x^*)$, the response associated with $x^*$ is probably similar too.
+
+    - Classification: take the majority.
+
+---
+
+## `knn()`
+
+.red[Example]: Let's classify our new points using $k=2$.
+
+```{r}
+library(class)
+knn2 <- knn(data[,1:2], test=new.points[,1:2], 
+            cl=data$group, k=2, prob=TRUE)
+knn2
+```
+
+---
+
+## k=2
+
+```{r}
+knn2
+```
+
+```{r, echo=FALSE, fig.height=4, fig.width=7}
+ggplot(data.new, aes(x=x, y=y, group=group))+geom_point(aes(col=group, pch=group)) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k=5
+
+```{r, echo=2}
+knn5 <- knn(data[,1:2], test=new.points[,1:2], cl=data$group, k=5, prob=TRUE)
+knn5
+```
+
+```{r, echo=FALSE, fig.height=4, fig.width=7}
+ggplot(data.new, aes(x=x, y=y, group=group))+geom_point(aes(col=group, pch=group)) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k=5
+
+```{r}
+knn10 <- knn(data[,1:2], test=new.points[,1:2], 
+             cl=data$group, k=10, prob=TRUE)
+knn10
+```
+
+```{r, echo=FALSE, fig.height=4, fig.width=7}
+ggplot(data.new, aes(x=x, y=y, group=group))+geom_point(aes(col=group, pch=group)) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k-nearest neighbors
+
+1. Easy to understand and code
+2. Extends to more than two variables
+3. Predictions can be slow if $k$ is large
+4. Predictions change depending on $k$
+
+---
+
+## Credit utilization
+
+.red[Example]: Can we use kNN to predict which utilization quantile a new customer falls into based on their application data?
+
+```{r}
+library(ISLR)
+data(Credit)
+Credit <- Credit %>% mutate(Utilization = Balance/Limit) %>% 
+  mutate(Quartile = ifelse(Utilization<0.01851, 'Q1', 
+                           ifelse(Utilization<0.09873, 'Q2',
+                           ifelse(Utilization<0.14325, 'Q3',
+                                  'Q4'))))
+```
+
+---
+
+## Credit utilization
+
+.red[Example]: We want to predict the utilization quantile based on two application characteristics: credit rating and age.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+ggplot(Credit, aes(x=Age, y=Rating, group=Quartile)) + 
+  geom_point(aes(col=Quartile, pch=Quartile)) + 
+  scale_color_brewer(palette='Set1')
+```
+
+---
+
+## Credit utilization
+
+New applicants:
+
+Name|Age|Credit Rating
+---|---|---
+Lacey|33|750
+Zach|47|400
+Ashlee|21|250
+
+```{r}
+applicants <- data.frame(Age = c(33, 47, 21), 
+                         Rating = c(750, 400, 250), 
+                         Quartile=c('New', 'New', 'New'))
+```
+
+---
+
+## Plotting the new applicants...
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+kNN_Credit <- Credit %>% select(Age, Rating, Quartile)
+Credit_New <- rbind(kNN_Credit, applicants)
+ggplot(Credit_New, aes(x=Age, y=Rating, group=Quartile)) + 
+  geom_point(aes(col=Quartile, pch=Quartile)) + 
+  scale_color_brewer(palette='Set1')
+```
+
+---
+
+## Plotting the new applicants 2.0
+
+Use `fct_relevel()` to reorder the categories.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+Credit_New <- rbind(kNN_Credit, applicants)
+Credit_New <- Credit_New %>% mutate(Group = fct_relevel(Quartile, 'Q1', 'Q2', 'Q3', 'Q4', 'New'))
+ggplot(Credit_New, aes(x=Age, y=Rating, group=Group)) + 
+  geom_point(aes(col=Group, pch=Group)) + 
+  scale_color_brewer(palette='Set1')
+```
+
+---
+
+## Credit utilization: k=10
+
+```{r}
+kNN_Credit_10 <- knn(kNN_Credit[,1:2], test=applicants[,1:2], 
+                     cl=kNN_Credit$Quartile, k=10, prob=TRUE)
+kNN_Credit_10
+```
+
+---
+
+## Credit utilization: k=20
+
+```{r}
+kNN_Credit_20 <- knn(kNN_Credit[,1:2], test=applicants[,1:2], 
+                     cl=kNN_Credit$Quartile, k=20, prob=TRUE)
+kNN_Credit_20
+```
+
+---
+
+## Credit utilization: k=100
+
+```{r}
+kNN_Credit_100 <- knn(kNN_Credit[,1:2], test=applicants[,1:2], 
+                      cl=kNN_Credit$Quartile, k=100, prob=TRUE)
+kNN_Credit_100
+```
+
+---
+
+## Predictions
+
+Name|Age|Credit Rating|k=10|k=20|k=100
+---|---|---|---|---|---
+Lacey|33|750|Q3 (0.7)|Q3 (0.65)|Q4 (0.44)
+Zach|47|400|Q4 (0.4)|Q4 (0.40)|Q4 (0.46)
+Ashlee|21|250|Q3 (0.5)|Q3 (0.40)|Q2 (0.48)
+
+- How do we evaluate the model?
+
+---
+
+## Cross-validation
+
+.red[Example]: Let's add some more dimensions to the model. We want to know if k-nearest neighbor is effective at predicting quartile membership using an applicant's age, credit rating, income, number of existing credit cards, and education level. I'll randomly select 100 observations for testing, and assign the other 300 to my training data set (72-25 split).
+
+```{r}
+test_ID <- sample(1:nrow(Credit), size=100)
+TRAINING <- Credit[-test_ID,]
+TESTING <- Credit[test_ID,]
+```
+
+---
+
+## Cross-validation
+
+Before we begin, let's make sure there are no major differences between our training and testing data set.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+ggplot(TRAINING, aes(x=Quartile)) + geom_bar(aes(fill=Quartile)) + labs(main='Training Data') + scale_fill_brewer(palette='Set1')
+```
+
+---
+
+## Cross-validation
+
+Before we begin, let's make sure there are no major differences between our training and testing data set.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+ggplot(TESTING, aes(x=Quartile)) + geom_bar(aes(fill=Quartile))  + labs(main='Testing Data') + scale_fill_brewer(palette='Set1')
+```
+
+---
+
+## Cross-validation
+
+Now, we'll set the testing data as "new data", and make predictions using the k-nearest neighbors from the training data.
+
+```{r}
+kNN_TRAINING <- TRAINING %>% dplyr::select(Quartile, Age, Rating, 
+                                    Income, Cards, Education)
+TESTING_PREDICT <- TESTING %>% dplyr::select(Quartile, Age, Rating,
+                                      Income, Cards, Education)
+kNN_CV_50 <- knn(kNN_TRAINING[,-1], test=TESTING_PREDICT[,-1], #<<
+                 cl=kNN_TRAINING$Quartile, k=50, prob=TRUE) #<<
+```
+
+---
+
+## Cross-validation
+
+How well did we classify the testing data?
+
+```{r}
+TESTING_PREDICT <- TESTING_PREDICT %>%
+  mutate(Prediction_kNN=kNN_CV_50)
+tally(Quartile~Prediction_kNN, data=TESTING_PREDICT) #<<
+```
+
+---
+
+## Who wants to see a magic trick?
+
+.full-width[.content-box-yellow[__Artificial neural network__: an attempt to simulate the network of neurons that make up a human brain so that a computer will be able to learn things and make decisions in a "humanlike manner"]]
+
+- Program computers to behave as though they are interconnected brain cells.
+
+The _idea_ of ANNs has been around since the 1960s... but they've exploded in popularity in the last 10 years.
+
+1. They work well! BUT...
+2. They require _large_ amounts of training data, especially for complex problems
+
+---
+
+## What the heck is a neural net?
+
+Start with one .orange[__node__] per input variable.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/neuralnetwork.png")
+```
+
+---
+
+## What the heck is a neural net?
+
+At each .blue[hidden layer], the inputs are fed in through an _activation function_.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/neuralnetwork.png")
+```
+
+---
+
+
+## What the heck is a neural net?
+
+Feed the results from .blue[hidden layer 1] into .green[hidden layer 2] through another activation function.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/neuralnetwork.png")
+```
+
+---
+
+## What the heck is a neural net?
+
+Repeat until you reach the final .red[output layer] - these are the predictions.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/neuralnetwork.png")
+```
+
+---
+
+## Hyperparameters
+
+The number of hidden layers and units per layer are _hyperparameters_ - we have to specify these.
+
+- Activation function: choice depends on software package used and variable types
+- Weights: estimated using an iterative process to minimize some _loss function_ - usually squared prediction error
+
+---
+
+## Why use a neural network?
+
+The _idea_ of ANNs has been around since the 1960s... but they've exploded in popularity in the last 10-15 years.
+
+1. They work well! BUT...
+2. They require _large_ amounts of training data, especially for complex problems. Until recently, we didn't have the computational power to use them.
+
+Famous applications of neural networks:
+
+1. Character recognition (converting handwritten text to computer text)
+2. Image and facial recognition
+
+---
+
+## Credit utilization
+
+The `nnet` function in the package of the same name fits a single-hidden-layer neural network. 
+
+- More complex implementations can be found in the `caret` package or `keras` interface (we'll leave this for MTH 366)
+
+```{r, eval=FALSE}
+#install.packages('nnet')
+library(nnet)
+# Again, errors are possible unless the response is 
+# coerced into a factor
+# Default activation function: logit
+credit_nnet <- nnet(as.factor(Quartile) ~ Age + Rating +
+                      Income + Cards + Education, 
+                    data=TRAINING, size=3)
+```
+
+---
+
+## Credit utilization
+
+`a 5-3-4` network:
+
+- 5 input variables (`Age + Rating + Income + Cards + Education`)
+- 3 units in the hidden layer (`size=3`)
+- 4 possible prediction values (`Quartile`)
+
+```{r, echo=FALSE}
+#install.packages('nnet')
+library(nnet)
+# Again, errors are possible unless the response is 
+#coerced into a factor
+credit_nnet <- nnet(as.factor(Quartile) ~ Age + Rating + 
+                      Income + Cards + Education, 
+                    data=TRAINING, size=3)
+credit_nnet
+```
+
+---
+
+## Evaluating the neural net
+
+- Softmax should be used with categorical responses
+
+```{r}
+summary(credit_nnet)
+```
+
+---
+
+## Evaluating the neural net
+
+```{r, eval=FALSE}
+# Pull a visualization function from GitHub
+library(devtools)
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+plot.nnet(credit_nnet)
+```
+
+---
+
+## Evaluating the neural net
+
+- `B1` and `B2` are _bias layers_ - like intercept terms in a regression model.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Pull a visualization function from GitHub
+library(devtools)
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+plot.nnet(credit_nnet)
+```
+
+---
+
+## Evaluating the neural net
+
+.red[Example]: How good are the neural network's predictions?
+
+```{r}
+names(TESTING_PREDICT)
+prediction_nnet <- predict(credit_nnet, 
+                           newdata=TESTING_PREDICT[, 2:6],
+                           type='class')
+TESTING_PREDICT <- TESTING_PREDICT %>%
+  mutate(Prediction_NNET=prediction_nnet)
+```
+
+---
+
+## Evaluating the neural net
+
+.red[Example]: How good are the neural network's predictions?
+
+```{r}
+tally(Quartile~Prediction_NNET, data=TESTING_PREDICT)
+```
+
+---
+
+## Evaluating the neural net
+
+.red[Example]: How often do the neural network and k-nearest neighbor classification agree?
+
+```{r}
+tally(Prediction_kNN~Prediction_NNET, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+```{r, echo=FALSE}
+# Use more units in our hidden layer
+credit_nnet10 <- nnet(as.factor(Quartile) ~ Age + Rating +
+                        Income + Cards + Education, 
+                      data=TRAINING, size=10)
+credit_nnet10
+```
+
+---
+
+## Widening our net
+
+.red[Example]: How well does the neural network with 10 units predict?
+
+```{r, echo=FALSE}
+prediction_nnet10 <- predict(credit_nnet10, newdata=TESTING_PREDICT[, 2:6], type='class')
+TESTING_PREDICT <- TESTING_PREDICT %>% mutate(Prediction_NNET10=prediction_nnet10)
+tally(Quartile~Prediction_NNET10, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+.red[Example]: How well does the neural network with 10 units predict? __Is it better than the network with 3 units?__
+
+```{r, echo=FALSE}
+tally(Prediction_NNET~Prediction_NNET10, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+.red[Example]: What if we increase to 20 units?
+
+```{r, eval=FALSE}
+credit_nnet20 <- nnet(as.factor(Quartile) ~ Age + Rating +
+                        Income + Cards + Education, 
+                      data=TRAINING, size=20) #<<
+prediction_nnet20 <- predict(credit_nnet20, 
+                             newdata=TESTING_PREDICT[, 2:6], type='class')
+TESTING_PREDICT <- TESTING_PREDICT %>% 
+  mutate(Prediction_NNET20=prediction_nnet20)
+tally(Quartile~Prediction_NNET20, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+.red[Example]: What if we increase to 20 units?
+
+```{r, echo=FALSE}
+credit_nnet20 <- nnet(as.factor(Quartile) ~ Age + Rating +
+                        Income + Cards + Education, 
+                      data=TRAINING, size=20) #<<
+prediction_nnet20 <- predict(credit_nnet20, newdata=TESTING_PREDICT[, 2:6], type='class')
+TESTING_PREDICT <- TESTING_PREDICT %>% mutate(Prediction_NNET20=prediction_nnet20)
+tally(Quartile~Prediction_NNET20, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+.red[Example]: What if we increase to 20 units?
+
+```{r, echo=FALSE}
+library(beepr)
+credit_nnet90 <- nnet(as.factor(Quartile) ~ Age + Rating +
+                        Income + Cards + Education, 
+                      data=TRAINING, size=90) #<<
+
+beep(3)
+
+prediction_nnet90 <- predict(credit_nnet90, newdata=TESTING_PREDICT[, 2:6], type='class')
+TESTING_PREDICT <- TESTING_PREDICT %>% mutate(Prediction_NNET90=prediction_nnet90)
+tally(Quartile~Prediction_NNET90, data=TESTING_PREDICT)
+```
+
+---
+
+## Widening our net
+
+```{r}
+tally(Prediction_NNET10~Prediction_NNET20, data=TESTING_PREDICT)
+```
+
+---
+
+## Scavenger hunt
+
+```{r}
+head(TESTING_PREDICT)
+
+TESTING_PREDICT <- TESTING_PREDICT %>%
+  mutate(MATCH = ifelse(Quartile==Prediction_NNET90, TRUE, FALSE))
+
+head(TESTING_PREDICT)
+
+misfits <- TESTING_PREDICT %>% filter(MATCH==FALSE)
+matches <- TESTING_PREDICT %>% filter(MATCH==TRUE)
+
+skim(misfits)
+skim(matches)
+```

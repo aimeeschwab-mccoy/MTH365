@@ -1,0 +1,86 @@
+---
+title: "Lab 4: Scraping the Bottom of the (Beer) Barrel"
+subtitle: "MTH 365: Intro to Data Science"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+In 2017, the U.S. beer industry shipped (sold) 207.4 million barrels of beer – equivalent to more than 2.9 billion cases of 24-12 ounce servings. In addition, the industry shipped approximately 2 million barrels of cider, equivalent to more than 28.3 million cases. Additionally, the U.S. beer industry sells more than $111.1 billion in beer and malt-based beverages to U.S. consumers each year. (Source: [The U.S. Beer Industry]( https://www.nbwa.org/resources/industry-fast-facts))
+
+Do you know how many breweries are around you? And how much beer they brew? In this lab we scrape and analyze data on US breweries.
+
+We will start with getting data on breweries in Nebraska. Then, you will use a similar approach to get data on breweries in a different state of our choosing.
+
+We'll use the Selector Gadget tool within a Chrome browser.
+
+- http://selectorgadget.com/
+
+In this example we'll work with the `tidyverse`, `rvest`, and `robotstxt` packages. You may need to install `rvest` and `robotstxt`.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse) 
+library(rvest)
+library(robotstxt)
+```
+
+# The data
+
+We will scrape brewery information from https://www.ratebeer.com/breweries/. Ratebeer.com is an in-depth, consumer-driven source of beer information. We will use the state-level brewery lists on this site to first obtain information on all breweries in a given state. Then, we will dive deeper and obtain additional information on each of the breweries in that state, one-by-one, by automating our code to do so.
+
+Before getting started, let's check that a bot has permissions to access pages on this domain.
+
+```{r,warning=FALSE}
+paths_allowed("https://www.ratebeer.com/")
+```
+
+## Nebraska breweries
+
+Click the link to check out the Nebraksa page on ratebeer.com.
+
+https://www.ratebeer.com/breweries/nebraska/27/213/
+
+> 1. Based on the information on the Nebraska breweries page, how many total (active + closed) breweries are there in NE?
+
+Make a new R scipt (not a Markdown document)! This is where we'll build our sample code.
+
+- Let's start with the names of breweries. Use the selector gadget to determine the path to the names of breweries, and create a vector of type character which are the names of the breweries.
+
+Next we get the cities. The paths for the cities on the active vs. closed page are different.
+
+- Create two vectors, one called `active_cities` and the other `closed_cities` that contain the cities of the active and closed breweries, respectively. Then, combine these vectors with 
+
+```{r, eval=FALSE}
+cities <- c(active_cities, closed_cities)
+```
+
+- Scrape brewery type, number of beers brewed at each brewery, year when brewery first opened ("est.")s. Save these as vectors called `types`, `counts`, `ests`,  `urls`, and `status` respectively.
+
+- Create a data frame (`tibble`) called `Nebraska_Beers` with column names shown in the table above.
+
+- Save this data frame as `Nebraska_Beers.csv` using the `write_csv` function: `write.csv(Nebraska_Beers, path = "Nebraska_Beers.csv")`.
+
+2. Load `Nebraska_Beers.csv` in your Rmd.
+
+3. Which city in NE has the most breweries? How many breweries are in Omaha, NE? What are they? (Hint: There might be a few cities that need some more attention.)
+
+4. Make a plot showing how the number of breweries in Nebraska has changed over time. Does the type of establishment play a role?
+
+
+## Choose your own state
+
+In a new R script, repeat the previous exercises (potentially with some modifications) to create a similar data frame (with the same columns) for a different state of your choosing. Save the result in a csc file with the name of the state you chose, e.g. `California_Beers.csv`.
+
+Load the new data in the R Markdown.
+
+6. Determine which city in that state has the highest number breweries.
+
+7. Determine which city has the youngest breweries, on average.
+
+8. Write a function to grab the zip code for each of the breweries from their own pages (at the URL you recorded). Test this function out on the first three breweries.
+
+9. By using the `map` function, grab the zip code for all of the breweries from their own pages (at the URL you recorded) and add this as a new column to your data frame.
+
+10. Determine which zip code in that state has the highest number breweries.
+
+For your submission, include both the `script.R` file you used to scrape the data and your compiled RMarkdown lab.

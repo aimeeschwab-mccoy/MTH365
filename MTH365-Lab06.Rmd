@@ -1,0 +1,99 @@
+---
+title: "Lab 6: Ventilator-Gate"
+subtitle: "MTH 365: Intro to Data Science"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+In 2010, the Minnesota Twins played their first season at Target Field. However, until that season, the Twins played at the Metrodome (an indoor stadium which also housed the Minnesota Vikings, and whose roof famously collapsed in 2010 for the _fifth!_ time).
+
+In the Metrodome, air ventilator fans were used both to keep the roof up and to ventilate the stadium. Typically, the air was blown from all directions into the center of the stadium.
+
+### Ventilator-Gate?
+
+According to a retired supervisor at the Metrodome, in the late innings of some games the fans would be modified so that the ventilation air would blow _out_ from home plate toward the outfield. The idea is that the increased air flow might affect the distance of a fly ball. 
+
+https://www.aem.umn.edu/outreach/Baseball_Launcher/startrib1.pdf
+
+To see if manipulating the fans could possibly make a difference, a group of students at the University of Minnesota and their professor built a "cannon" that used compressed air to shoot baseballs. Then they did the follwogin experiment.
+
+1. Shoot balls at angles around 50 degrees with velocity of around 150 feet per second.
+2. Shoot balls under two different settings: headwind (air blowing from outfield toward home plate) or tailwind (air blowing from home plate toward outfield).
+3. Record other variables: weight of the ball (in grams), diameter of the ball (in cm), and distance of the ball's flight (in feet).
+
+If you're not a baseball fan, these numbers might seem strange. Here's some additional background. The batter stands near "home plate" and tries to hit the ball toward the outfield. A "fly ball" refers to a ball that is hit into the air. It's desirable to hit the ball as far as possible. Basic physics suggest that the distance is maximized when the ball is hit at an intermediate angle steeper than 45 degrees from the horizontal.
+
+The data for this lab is stored in the `alr4` R package.
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+# install.packages(alr4)
+library(alr4)
+data(domedata)
+```
+
+The variables in this data set include:
+
+Variable|Description
+---|---
+`Cond`|The wind conditions (`Headwind`, `Tailwind`)
+`Angle`|The angle of the ball's trajectory
+`Velocity`|Velocity of the ball (in feet per second)
+`BallWt`|Weight of the ball (in grams)
+`BallDia`|Diameter of the ball (in inches)
+`Dist`|Distance in feet of the flight of the ball
+
+## Starting "simple": does wind condition matter?
+
+> 1. Make a plot showing the distance each ball travels and the wind conditions. Based on your plot, does it look like the wind condition affects the distance?
+
+The `lm()` function can be used to fit a linear model with categorical response variables too! Here's how it works.
+
+- For your categorical variable, `R` creates an indicator variable. By default, the first value alphabetically is set to 0, and the second value(s) is set to 1.
+- Then, the following model is fit.
+
+$$Y_{ij} = \beta_0 + \beta_iX_{ij}$$
+
+This looks like the simple linear regression model, with one difference!
+
+$$X_{ij}=\begin{cases}
+1 & Cond=TailWind\\
+0 & Cond=HeadWind
+\end{cases}$$
+
+> 2. In this model, what does $\beta_0$ actually estimate? What does $\beta_1$ actually estimate?
+
+Now, fit the simple linear regression model, and examine a `summary()` of the results. A template is provided.
+
+```{r, eval=FALSE}
+model1 <- lm(___ ~ ___, data=domedata)
+summary(model1)
+```
+
+> 3. Is there a statistically significant effect of wind condition on distance? Explain why or why not.
+
+> 4. Predict the mean distance of a ball batted with a headwind and the mean distance of a ball batted with a tailwind.
+
+### Adding more variables: `Angle`
+
+We know that the `Angle` of the ball's trajectory might affect distance. Let's fit a second model that includes _both_ the wind condition and the angle and see what happens!
+
+> 5. First, make a plot that includes `Angle`, `Cond`, and `Distance`. Describe what you see in your plot.
+
+> 6. Fit a linear model that includes both `Angle` and `Cond`. You can add more variables in a linear model using a `+`. Is either variable statistically significant? What does this tell you?
+
+### Did we miss something? Add them all!
+
+The last thing we'll try is fitting a "universal" model, one with all possible variables in it.
+
+> 7. Fit the universal model. Which variable(s) are statistically significant, if any?
+
+> 8. The `Adjusted R-squared` tells you how much of the variability in the response variable is accounted for by using the linear model. How much of the variability in the distance can we explain with the universal model?
+
+> 9. Fit a final multiple regression model with only the significant variables. How much of the variability in the distance does this model explain?
+
+> 10. Make a plot(s) showing how distance depends on the significant variables (you might need more than one). Does this analysis provide compelling evidence that manipulating the fans could affect the distance a ball travels? Use the plots to support your answer.
+
+

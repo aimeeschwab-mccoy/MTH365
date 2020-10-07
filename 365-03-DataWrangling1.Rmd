@@ -1,0 +1,555 @@
+---
+title: 'Section 3: Data Wrangling'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r Sys.Date()`"
+output: 
+  ioslides_presentation:
+    widescreen: true
+---
+
+<style>
+h2 { 
+ color: #0054a6;		
+}
+h3 { 
+ color: #019cdb;	
+}
+</style>
+
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 4: Data Wrangling
+- _Modern Data Science with R_ Ch. 5: Tidy Data and Iteration
+- Wickham, Hadley. (2014). "Tidy Data". _Journal of Statistical Software_ 59(10). Available on BlueLine.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Data structure and semantics
+
+- Most statistical datasets are tables made up of _rows_ and _columns_
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/datatable.png")
+```
+
+## Data structure and semantics
+
+A dataset is a collection of _values_: these can be _numbers_ (quantiative) or character _strings_ (qualitative)
+
+- Every value belongs to a variable and an observation
+
+&nbsp;
+
+<div class="blue2">
+__Variable__: 
+</div>
+contains all values that measure the same underlying attribute
+
+<div class="blue2">
+__Observation__: 
+</div>
+contains all values measured on the same unit
+
+## Tidy data
+
+"Tidy" data is a standard way of mapping the meaning of a dataset to its structure. 
+
+1. Each variable forms a column.
+2. Each observation forms a row.
+3. Each type of observational unit forms a table.
+
+Any other arrangement of the data is called "messy".
+
+## Tidy data
+
+<div class="red2">__Example__:</div> Tables 1 and 2 rearranged in tidy format.
+
+person|treatment|result
+---|---|---
+John Smith|a|-
+Jane Doe|a|16
+Mary Johnson|a|3
+John Smith|b|2
+Jane Doe|b|11
+Mary Johnson|b|1
+
+## Tidy data
+
+Real datasets can, and often do, violate the three principles of tidy data in almost every way imaginable! 
+
+- Column headers are values, not variable names
+- Multiple variables are stored in one column
+- Variables are stored in both rows and columns
+- Multiple types of observational units are stored in the same table
+- A single observational unit is stored in muliple tables
+
+## Tidy data
+
+```{r, echo=FALSE, out.height = '80%'}
+knitr::include_graphics("Images/forbescleaning.png")
+```
+
+## Gapminder
+
+<div class="red2">__Example__:</div> 
+
+Gapminder is an independent Swedish foundation with no political, religious or economic affiliations. __Gapminder is a fact tank, not a think tank.__ Gapminder fights devastating misconceptions about global development. Gapminder produces free teaching resources making the world understandable based on reliable statistics. Gapminder promotes a fact-based worldview everyone can understand.  Gapminder collaborates with universities, UN, public agencies and non-governmental organizations.
+
+## Loading the Gapminder data set
+
+```{r}
+library(dslabs)
+data(gapminder)
+glimpse(gapminder)
+```
+
+## Exploring the Gapminder data set
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(gapminder, aes(x=fertility, y=infant_mortality)) +
+  geom_point()
+```
+
+## TOO MANY COUNTRIES
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(gapminder, aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=country))
+```
+
+## Better?
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(gapminder, aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=region))
+```
+
+## Has this changed over time?
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(gapminder, aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=region)) + 
+  facet_wrap(aes(year))
+```
+
+## Time to re-group
+
+If we want to learn anything from this data set, we've got to break it up.
+
+```{r, echo=FALSE, out.width = '50%'}
+knitr::include_graphics("Images/dplyr.png")
+```
+
+## Data wrangling with `dplyr`
+
+There are five major `dplyr` functions, or "verbs", for wrangling data:
+
+- `select()`: take a subset of the columns (variables/features)
+- `filter()`: take a subset of the rows (observations)
+- `mutate()`: add or modify existing columns
+- `arrange()`: sort the rows
+- `summarize()`: aggregate the data across rows (grouping)
+
+## `dplyr` rules for functions
+
+- First argument is *always* a data frame
+- Subsequent arguments say what to do with that data frame
+- Always return a data frame
+- Don't modify "in place"
+
+## Piping v. layering
+
+Pipe or layer?
+
+- The `%>%` operator in `dplyr` functions is called the pipe operator. This means you "pipe" the output of the previous line of code as the first input of the next line of code.
+- The `+` operator in `ggplot2` functions is used for "layering". This means you create the plot in layers, separated by `+`.
+
+
+## `select()`
+
+- `select()`: take a subset of the columns (variables/features)
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/select.png")
+```
+
+## `select()`
+
+```{r}
+gapminder_short <- gapminder %>% select(gdp, region)
+glimpse(gapminder_short)
+```
+
+## `filter()`
+
+- `filter()`: take a subset of the rows (observations)
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/filter.png")
+```
+
+## `filter()`
+
+```{r}
+gapminder2000 <- gapminder %>% 
+  filter(year==2000)
+glimpse(gapminder2000)
+```
+
+## `filter()`
+
+```{r, echo=FALSE, warning=FALSE}
+ggplot(gapminder2000, aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=region))
+```
+
+## `filter()`
+
+```{r, eval=FALSE, warning=FALSE}
+gapminder %>% filter(year==2000) %>%
+  filter(region %in% c('Central Asia', 
+                       'Eastern Asia', 
+                       'Polynesia', 
+                       'South-Eastern Asia', 
+                       'Southern Asia', 
+                       'Western Asia')) %>%
+  ggplot(aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=region))
+```
+
+## `filter()`
+
+```{r, echo=FALSE, warning=FALSE}
+gapminder %>% filter(year==2000) %>%
+  filter(region %in% c('Central Asia', 'Eastern Asia', 
+                       'Polynesia', 'South-Eastern Asia', 
+                       'Southern Asia', 'Western Asia')) %>%
+  ggplot(aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=region))
+```
+
+## (Smooth) Operators
+
+- `%>%`: __pipe__ operator, takes the result of what's before the pipe and uses it in the code after the pipe
+- `%in%`: tests whether the value of an input vector is contained in a list
+- `==`: "exactly equal", tests whether the value of an input vector is equal to a particular value
+
+## More Operators
+
+Operator|Definition                   
+---|---
+`<`| less than                    
+`<=`|	less than or equal to
+`>`| greater than
+`>=`|	greater than or equal to 
+`==`|	exactly equal to 
+`!=`|	not equal to 
+`x & y`| `x` AND `y`                  
+`x %in% y`| test if `x` is in `y`   
+
+
+## Fertility and infant mortality in the US
+
+```{r, echo=FALSE, warning=FALSE}
+gapminder %>% filter(country=='United States') %>%
+  ggplot(aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=year))
+```
+
+## Fertility and infant mortality
+
+<div class="red2">__Example__:</div> 
+
+In your notes, try reproducing this plot. When you're finished, modify your plot for another country. Describe how fertility and infant mortality are changing over time.
+
+```{r, echo=FALSE, warning=FALSE}
+gapminder %>% filter(country=='United States') %>%
+  ggplot(aes(x=fertility, y=infant_mortality)) +
+  geom_point(aes(col=year))
+```
+
+## `mutate()`
+
+- `mutate()` lets us create new variables based on manipulations of the old variables
+
+<div class="red2">__Example__:</div> We'd like to calculate the gross domestic product per capita. Here are the variables in our data - write an expression to do this calculation.
+
+```{r}
+names(gapminder)
+```
+
+## GDP per capita
+
+```{r}
+gapminder <- gapminder %>% 
+  mutate(GDP_pc = gdp/population)
+```
+
+<div class="red2">__Example__:</div> How do we find out which countries have the highest GDP per capita?
+
+## GDP per capita
+
+```{r, warning=FALSE, message=FALSE}
+ggplot(gapminder, aes(x=GDP_pc)) + 
+  geom_density()
+```
+
+## GDP per capita
+
+<div class="red2">__Example__:</div> How do we find out which countries have the highest GDP per capita?
+
+```{r}
+high_GDP <- gapminder %>% filter(GDP_pc>50000)
+```
+
+## Highest GDPs
+
+```{r}
+high_GDP
+```
+
+## `arrange()`
+
+Right now, the data is sorted by country, then year. We could use the `arrange()` command to resort in terms of another variable.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/arrange.png")
+```
+
+## Highest GDPs
+
+```{r}
+GDP_only <- gapminder %>% select(country, year, GDP_pc, continent)
+GDP_only
+```
+
+## Highest GDPs
+
+```{r}
+GDP_only %>% arrange(continent, desc(GDP_pc))
+```
+
+## `summarize()`
+
+If we want to compare summary statistics, we might use `summarize()`.
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/summarize.png")
+```
+
+## Average GDP per capita
+
+```{r}
+GDP_only %>% summarize(avg_GDP_pc=mean(GDP_pc), 
+                       sd_GDP_pc=sd(GDP_pc), 
+                       min_GDP_pc=min(GDP_pc), 
+                       max_GDP_pc=max(GDP_pc))
+```
+
+## Average GDP per capita
+
+```{r}
+GDP_only %>% filter(GDP_pc != "NA") %>%
+  summarize(avg_GDP_pc=mean(GDP_pc), 
+            sd_GDP_pc=sd(GDP_pc), 
+            min_GDP_pc=min(GDP_pc), 
+            max_GDP_pc=max(GDP_pc),
+            N=n())
+```
+
+## Average GDP per capita
+
+```{r}
+GDP_only %>% filter(GDP_pc != "NA") %>%
+  group_by(continent) %>%
+  summarize(avg_GDP_pc=mean(GDP_pc), 
+            sd_GDP_pc=sd(GDP_pc), 
+            min_GDP_pc=min(GDP_pc), 
+            max_GDP_pc=max(GDP_pc),
+            N=n())
+```
+
+## Average GDP per capita
+
+```{r}
+GDP_only %>% filter(GDP_pc != "NA") %>%
+  filter(year==2010) %>%
+  group_by(continent) %>%
+  summarize(avg_GDP_pc=mean(GDP_pc), 
+            sd_GDP_pc=sd(GDP_pc), 
+            min_GDP_pc=min(GDP_pc), 
+            max_GDP_pc=max(GDP_pc),
+            N=n())
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice__:
+</div>
+
+In teams of 2-3, answer the following questions.
+
+1. Which countries have the highest infant mortality rates?
+2. Which European counties have the highest life expectancy?
+3. Which European countries have the lowest life expectancy?
+4. Find the average infant mortality rate, worldwide.
+5. Find the average infant mortality rate in each region.
+6. Find the average infant mortality rate in each year.
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 1__:
+</div>
+
+Which countries have the highest infant mortality rates?
+
+```{r}
+gapminder %>% 
+  select(country, year, infant_mortality) %>% 
+  arrange(desc(infant_mortality))
+```
+
+2. Which European counties have the highest life expectancy?
+3. Which European countries have the lowest life expectancy?
+4. Find the average infant mortality rate, worldwide.
+5. Find the average infant mortality rate in each region.
+6. Find the average infant mortality rate in each year.
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 2__:
+</div>
+
+Which European counties have the highest life expectancy?
+
+```{r}
+gapminder %>% filter(continent=='Europe') %>%
+  select(country, year, life_expectancy) %>% 
+  arrange(desc(life_expectancy))
+```
+
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 3__:
+</div>
+
+Which European countries have the lowest life expectancy?
+
+```{r}
+gapminder %>% filter(continent=='Europe') %>%
+  select(country, year, life_expectancy) %>% 
+  arrange(life_expectancy)
+```
+
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 4__:
+</div>
+
+Find the average infant mortality rate, worldwide.
+
+```{r}
+gapminder %>% summarize(mean=mean(infant_mortality))
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 4__:
+</div>
+
+Find the average infant mortality rate, worldwide.
+
+```{r}
+gapminder %>% filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality))
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 5__:
+</div>
+
+Find the average infant mortality rate in each region.
+
+```{r}
+gapminder %>% group_by(region) %>%
+  filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality))
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 5__:
+</div>
+
+Find the average infant mortality rate in each region.
+
+```{r, echo=FALSE}
+gapminder %>% group_by(region) %>%
+  filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality)) %>%
+  ggplot(aes(x=region, y=mean)) + 
+  geom_col(fill='#0054a6') + 
+  coord_flip() + 
+  guides(fill=FALSE)
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 6__:
+</div>
+
+Find the average infant mortality rate in each year.
+
+```{r}
+gapminder %>% group_by(year) %>%
+  filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality))
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice 6__:
+</div>
+
+6. Find the average infant mortality rate in each year.
+
+```{r, echo=FALSE}
+gapminder %>% group_by(year) %>%
+  filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality)) %>%
+  ggplot(aes(x=year, y=mean)) + 
+  geom_point(col='#0054a6')
+```
+
+## More practice: Gapminder
+
+<div class="green2">
+__Extra Practice__:
+</div>
+
+How does average infant mortality by year depend on continent?
+
+```{r, echo=FALSE}
+gapminder %>% group_by(year, continent) %>%
+  filter(infant_mortality != 'NA') %>%
+  summarize(mean=mean(infant_mortality)) %>%
+  ggplot(aes(x=year, y=mean)) + 
+  geom_point(aes(col=continent, pch=continent)) + 
+  scale_color_manual(values=c('#0054a6', '#019cbd', '#ffa300', '#ffcc4f', '#73b865'))
+```

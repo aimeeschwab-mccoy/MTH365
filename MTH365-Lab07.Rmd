@@ -1,0 +1,49 @@
+---
+title: 'Lab 7: What makes a good "Vinho Verde"?'
+subtitle: "MTH 365: Intro to Data Science"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+"Vinho Verde" (Portuguese: "green wine") refers to a Portuguese style of wine that originated in the historic Minho province in the far north of the country. The name literally means "green wine," but translates as "young wine", with wine being released in 3-6 months after the grapes are harvested. They may be red, white, or rose and they are usually consumed soon after bottling.
+
+A group of researchers living in Guimaraes, Portugal used data mining to classify the quality of white and red Vinho Verde wines based on their chemical properties: acidity, sugar content, chlorides, sulfur dioxide, density, etc. We'll look at the data collected on white wines for this lab.
+
+- P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. "Modeling wine preferences by data mining from physicochemical properties." In Decision Support Systems, Elsevier, 47(4):547-553. ISSN: 0167-9236.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+white_wine <- read.csv("~/OneDrive - Creighton University/Spring 2019 Courses/MTH 365 - Intro to Data Science/Data/winequality-white.csv", sep=";")
+glimpse(white_wine)
+```
+
+We'll consider a "high quality" wine to be one with a rating of 7 or higher.
+
+```{r}
+white_wine2 <- white_wine %>% mutate(high_quality = ifelse(quality >= 7, 'High', 'Low') )
+glimpse(white_wine2)
+```
+
+> 1. What proportion of wines in the data set are of high quality? Build a test and training set for this data. Use 80% of your observations in the training set, and 20% in the testing set. 
+
+> 2. Use a classification tree to explain how alcohol content affects whether or not a wine is considered high quality.
+
+> 3. Make a plot of alcohol content v. wine quality for the training data. Does the plot support your findings with the classfication model?
+
+> 4. It looks like the relationship might be a bit more complex. Use a random forest to "select" additional variables to predict the wine quality. (Hint: You'll need to explicitly state that `high_quality` is a factor variable.) Based on the confusion matrix, when does the random forest work well on the training data?
+
+> 5. Which variables are most important in this forest?
+
+> 6. Use the two most important variables in a decision tree. What does this tell you about wine quality?
+
+> 7. What if we split the wines into three groups? Define "high quality" to be a quality of 7 or more, "medium quality" to be a quality of 6, and "low quality" to be a quality of 5 or less. Use the nested `ifelse` statement below to create a new variable with three ranking classes. How many wines are in each class? You should also create new test/training data sets.
+
+```{r}
+white_wine2 <- white_wine %>% mutate(quality3 = ifelse(quality >= 7, 'High', 
+                                                           ifelse(quality ==6, 'Medium', 'Low')))
+```
+
+> 8. Use a random forest to determine which variables might significantly affect quality using the three classes.
+
+> 9. Fit a decision tree using the two most significant explanatory variables. What can you conclude?

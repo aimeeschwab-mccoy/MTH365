@@ -1,0 +1,561 @@
+---
+title: 'Section 12: Spatial Data Visualization'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: ["style.css", 'hygge']
+    lib_dir: libs
+    nature:
+      highlightStyle: magula
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 14: Working with Spatial Data
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+library(RColorBrewer)
+library(sp)
+```
+
+- Hint: This document will probably take longer to knit than normal, so avoid knitting until the end of class.
+
+---
+
+## You know nothing, John Snow...
+
+__Example__: In the 1850s, there was a cholera outbreak in Victorian London. A physician, Dr. John Snow, took a unique approach to studying the outbreak: he mapped where the patients lived.
+
+```{r}
+plot(CholeraDeaths)
+```
+
+---
+
+## ... or do you?
+
+```{r, fig.width=10, fig.height=6}
+cholera_coords <- as.data.frame(coordinates(CholeraDeaths))
+cholera_coords %>% ggplot(aes(x=coords.x1, y=coords.x2)) + 
+  geom_point()
+```
+
+---
+
+## Broad Street
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/SnowMap_Points.png")
+```
+
+---
+
+## `ggmap` (?)
+
+```{r, eval=FALSE}
+#devtools::install_github("dkahle/ggmap")
+library(ggmap)
+m <- get_map('John Snow, London, England', 
+             maptype='roadmap')
+ggmap(m)
+```
+
+- If you try to run this, you'll get an error.
+
+> Error: Google now requires an API key. See ?register_google for details.
+
+---
+
+## Google API key
+
+In mid-2018, Google Maps began requiring users to have a registered API key. 
+
+- Users have to set up an account with Google, enable the relevant APIs, and _then_ tell R about the user's set up.
+- Part of this process requires a credit card. It's totally lame. Don't do it.
+
+---
+
+## Google API key (if you insist...)
+
+From the documentation:
+
+- To obtain an API key and enable services, go to https://cloud.google.com/maps-platform/. 
+- To tell ggmap about your API key, use register_google(), e.g. register_google(key = "mQkzTpiaLYjPqXQBotesgif3EfGL2dbrNVOrogg") (that's a fake key). This will set your API key for the current session, but if you restart R, you'll need to do it again. 
+
+---
+
+## Free alternative: `tmap`
+
+```{r, eval=FALSE}
+library(tmap)
+map <- qtm(CholeraDeaths)
+tmap_leaflet(map, mode='view')
+```
+
+---
+
+## Free alternative: `tmap`
+
+```{r, echo=FALSE, fig.width=10, fig.height=6, warning=FALSE, message=FALSE}
+library(tmap)
+map <- qtm(CholeraDeaths)
+tmap_leaflet(map, mode='view')
+```
+
+---
+
+## Election results by district
+
+__Example__: Daily Kos compiled results by congressional district for the 2008, 2012, and 2016 presidential elections, this data is saved as `CongressionalElections.csv`. Let's use this data to visualize election results in the US.
+
+- FiveThirtyEight identifies the states of Colorado, Florida, Iowa, Michigan, Minnesota, Ohio, Nevada, New Hampshire, North Carolina, Pennsylvania, Virginia, and Wisconsin as "perennial" swing states that have regularly seen close contests over the last few presidential campaigns.
+
+---
+
+## Election results by district
+
+```{r, echo=-1}
+CongressionalElections <- read.csv("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Data/CongressionalElections.csv")
+glimpse(CongressionalElections)
+```
+
+---
+
+## Ohio election results
+
+```{r}
+OH_data <- CongressionalElections %>% 
+  filter(str_detect(CD, 'OH'))
+glimpse(OH_data)
+```
+
+---
+
+## Ohio election results
+
+```{r, eval=FALSE}
+library(USAboundaries)
+OH_congressional <- us_congressional(states = "Ohio", 
+                                     resolution = "high")
+OH_congressional <- OH_congressional %>% arrange(cd115fp)
+glimpse(OH_congressional)   #<<
+plot(st_geometry(OH_congressional))
+```
+
+---
+
+## Ohio election results
+
+```{r, echo=FALSE}
+library(USAboundaries)
+OH_congressional <- us_congressional(states = "Ohio", resolution = "high")
+OH_congressional <- OH_congressional %>% arrange(cd115fp)
+glimpse(OH_congressional)
+```
+
+---
+
+## Ohio election results
+
+```{r, eval=FALSE}
+library(USAboundaries)
+OH_congressional <- us_congressional(states = "Ohio", 
+                                     resolution = "high")
+OH_congressional <- OH_congressional %>% arrange(cd115fp)
+glimpse(OH_congressional)   
+plot(st_geometry(OH_congressional)) #<<
+```
+
+---
+
+## Ohio election results
+
+```{r, echo=FALSE}
+plot(st_geometry(OH_congressional))
+```
+
+---
+
+## Ohio election results (2016)
+
+```{r, eval=FALSE}
+OH_congressional$Clinton2016 <- OH_data$Clinton2016
+OH_congressional$Trump2016 <- OH_data$Trump2016
+
+library(RColorBrewer)
+ggplot(OH_congressional) + 
+  geom_sf(aes(fill = Clinton2016)) +  #<<
+  scale_fill_distiller(palette='Blues', direction=+1)
+```
+
+---
+
+## Ohio election results (2016)
+
+```{r, echo=FALSE, fig.height=6, fig.width=10}
+OH_congressional$Clinton2016 <- OH_data$Clinton2016
+OH_congressional$Trump2016 <- OH_data$Trump2016
+
+library(RColorBrewer)
+ggplot(OH_congressional) + geom_sf(aes(fill = Clinton2016)) + scale_fill_distiller(palette='Blues', direction=+1)
+```
+
+---
+
+## Ohio election results (2016)
+
+```{r, echo=FALSE, fig.height=6, fig.width=10}
+ggplot(OH_congressional) + geom_sf(aes(fill = Trump2016)) + scale_fill_distiller(palette='Reds', direction=+1)
+```
+
+---
+
+## Ohio election results (2016)
+
+```{r, eval=FALSE}
+OH_congressional <- OH_congressional %>%  #<<
+  mutate(Margin2016 = Trump2016-Clinton2016)  #<<
+ggplot(OH_congressional) + 
+  geom_sf(aes(fill = Margin2016)) + 
+  scale_fill_distiller(palette='RdBu', direction=-1)
+```
+
+---
+
+## Ohio election results (2016)
+
+```{r, echo=FALSE, fig.height=6, fig.width=10}
+OH_congressional <- OH_congressional %>% mutate(Margin2016 = Trump2016-Clinton2016)
+ggplot(OH_congressional) + geom_sf(aes(fill = Margin2016)) + scale_fill_distiller(palette='RdBu', direction=-1)
+```
+
+---
+
+## Another free alternative: `leaflet`
+
+```{r, eval=FALSE}
+library(leaflet)
+
+palette <- colorBin("RdBu", domain = c(-70, 70), 
+                    bins = 10, reverse = TRUE)
+
+leaflet(OH_congressional) %>% 
+  addTiles() %>%    #<<
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~palette(Margin2016),
+                fillOpacity = 0.99,
+                label = ~paste0("District: ", cd115fp))
+
+```
+
+---
+
+## Another free alternative: `leaflet`
+
+```{r, echo=FALSE}
+library(leaflet)
+
+palette <- colorBin("RdBu", domain = c(-70, 70), 
+                    bins = 10, reverse = TRUE)
+
+leaflet(OH_congressional) %>% 
+  addTiles()
+
+```
+
+---
+
+## Another free alternative: `leaflet`
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+leaflet(OH_congressional) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~palette(Margin2016),
+                fillOpacity = 0.7,
+                label = ~paste0("District: ", cd115fp))
+
+```
+
+---
+
+## North Carolina election results (2016)
+
+```{r, eval=FALSE}
+NE_congressional <- us_congressional(states = "Nebraska", 
+                                     resolution = "high")
+NE_congressional <- NE_congressional %>% 
+  arrange(cd115fp)
+NE_data <- CongressionalElections %>% 
+  filter(str_detect(CD, 'NE'))
+
+NE_congressional$Clinton2016 <- NE_data$Clinton2016
+NE_congressional$Trump2016 <- NE_data$Trump2016
+```
+
+---
+
+## North Carolina election results (2016)
+
+```{r, eval=FALSE}
+NE_congressional <- NE_congressional %>% 
+  mutate(Margin2016 = Trump2016-Clinton2016)
+ggplot(NE_congressional) + 
+  geom_sf(aes(fill = Margin2016)) + 
+  scale_fill_distiller(palette='RdBu', direction=-1)
+
+leaflet(NE_congressional) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~palette(Margin2016),
+                fillOpacity = 0.7,
+                label = ~paste0("District: ", cd115fp))
+```
+
+---
+
+## North Carolina election results (2016)
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.height=6, fig.width=10}
+NC_congressional <- us_congressional(states = "North Carolina", resolution = "high")
+NC_congressional <- NC_congressional %>% arrange(cd115fp)
+NC_data <- CongressionalElections %>% filter(str_detect(CD, 'NC'))
+
+NC_congressional$Clinton2016 <- NC_data$Clinton2016
+NC_congressional$Trump2016 <- NC_data$Trump2016
+
+NC_congressional <- NC_congressional %>% mutate(Margin2016 = Trump2016-Clinton2016)
+ggplot(NC_congressional) + geom_sf(aes(fill = Margin2016)) + scale_fill_distiller(palette='RdBu', direction=-1)
+```
+
+---
+
+## North Carolina election results (2016)
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+leaflet(NC_congressional) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~palette(Margin2016),
+                fillOpacity = 0.7,
+                label = ~paste0("District: ", cd115fp))
+```
+
+---
+
+## Election results
+
+Try it yourself: 
+
+1. Make a map of the 2016 election results for a state of your choosing
+2. Make a map of the 2012 election results for a state of your choosing
+3. Discuss the patterns in your maps with another student: what can you learn from these maps?
+
+---
+
+## Education levels in the US
+
+__Example__: Let's look at another data set, educational levels in the US. 
+
+```{r}
+US_counties <- us_boundaries(type='county', 
+                             resolution='high')
+US_counties <- US_counties %>% arrange(statefp)
+US_counties <- US_counties %>% 
+  mutate(FIPS = paste(statefp, countyfp, sep=''))
+glimpse(US_counties)
+```
+
+---
+
+## Education levels in the US
+
+__Example__: Read the data into R, and run the commented code. What error do you get? How can you fix it?
+
+```{r, echo=-1}
+Education <- read.csv("~/OneDrive - Creighton University/2019/Spring 2019 Courses/MTH 365 - Intro to Data Science/Data/Education.csv")
+# Education_Counties <- US_counties %>% inner_join(Education, by=c('FIPS'='FIPS.Code'))
+```
+
+---
+
+## Education levels in the US
+
+```{r}
+class(Education$FIPS.Code)
+class(US_counties$FIPS)
+US_counties$FIPS <- as.integer(US_counties$FIPS)
+Education_Counties <- US_counties %>% 
+  inner_join(Education, by=c('FIPS'='FIPS.Code'))
+```
+
+---
+
+## Education levels in the US
+
+```{r}
+names(Education_Counties)
+```
+
+---
+
+## Education levels in Nebraska
+
+```{r}
+NE_Education <- Education_Counties %>% filter(State=='NE')
+favstats(~LessHS2013, data=NE_Education)
+```
+
+---
+
+## Education levels in Nebraska
+
+```{r, eval=FALSE}
+greens <- colorBin("Greens", domain = c(0, 30), bins = 6)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~greens(LessHS2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, 
+                                ' (', LessHS2013, '%)')) 
+```
+
+---
+
+## Less than a high school degree: NE
+
+```{r, echo=FALSE}
+NE_Education <- Education_Counties %>% filter(State=='NE')
+#favstats(~LessHS2013, data=NE_Education)
+
+greens <- colorBin("Greens", domain = c(0, 30), bins = 6)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~greens(LessHS2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, ' (', LessHS2013, '%)'))
+```
+
+---
+
+## Education levels in Nebraska
+
+```{r, eval=FALSE}
+greens <- colorBin("Greens", domain = c(0, 30), bins = 6)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~greens(LessHS2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, 
+                                ' (', LessHS2013, '%)')) %>%
+  addLegend(position = 'bottomleft',
+            colors = greens(seq(from=2.5, to=27.5, length=6)),
+            labels = c('0-5%', '5.1-10%', '10.1-15%', 
+                       '15.1-20%', '20.1-25%', '25.1-30%'),
+            title = 'Less than a HS Degree (2013)')
+```
+
+---
+
+## Less than a high school degree: NE
+
+```{r, echo=FALSE}
+NE_Education <- Education_Counties %>% filter(State=='NE')
+#favstats(~LessHS2013, data=NE_Education)
+
+greens <- colorBin("Greens", domain = c(0, 30), bins = 6)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~greens(LessHS2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, ' (', LessHS2013, '%)')) %>%
+  addLegend(position = 'bottomleft',
+            colors = greens(seq(from=2.5, to=27.5, length=6)),
+            labels = c('0-5%', '5.1-10%', '10.1-15%', '15.1-20%', '20.1-25%', '25.1-30%'),
+            title = 'Less than a HS Degree (2013)')
+```
+
+---
+
+## High school degree only: NE
+
+```{r, echo=FALSE}
+NE_Education <- Education_Counties %>% filter(State=='NE')
+#favstats(~HSonly2013, data=NE_Education)
+
+purples <- colorBin("Purples", domain = c(20, 45), bins = 5)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~purples(HSonly2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, ' (', HSonly2013, '%)')) %>%
+  addLegend(position = 'bottomleft',
+            colors = purples(seq(from=22.5, to=43.5, length=5)),
+            labels = c('20-25%', '25.1-30%', '30.1-35%', '35.1-40%', '40.1-45%'),
+            title = 'HS Degree Only (2013)')
+```
+
+---
+
+## College degree or more: NE
+
+```{r, echo=FALSE}
+NE_Education <- Education_Counties %>% filter(State=='NE')
+#favstats(~CollegePlus2013, data=NE_Education)
+
+colors <- colorBin("Spectral", domain = c(10, 40), bins = 6)
+
+leaflet(NE_Education) %>% 
+  addTiles() %>% 
+  addPolygons(color = "black",
+                opacity = 1,
+                weight = 1,
+                fillColor = ~colors(CollegePlus2013),
+                fillOpacity = 0.7,
+                label = ~paste0("County: ", Area.name, ' (', CollegePlus2013, '%)')) %>%
+  addLegend(position = 'bottomleft',
+            colors = colors(seq(from=10, to=40, length=6)),
+            labels = c('10-15%', '15.1-20%', '20.1-25%', '25.1-30%', '30.1-35%', '35.1-40%'),
+            title = 'College Degree Plus (2013)')
+```
+
+---
+
+## Education levels in the US
+
+1. Make plots of education levels in a state of your choosing. You should have four plots (`LessHS2013`, `HSonly2013 `, `SomeCollege2013 `, `CollegePlus2013`). Use a different color palette for each plot.
+
+2. Talk to another student about what the plot tells you about that state.

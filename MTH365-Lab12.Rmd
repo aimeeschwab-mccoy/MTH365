@@ -1,0 +1,69 @@
+---
+title: 'Lab 12: @realDonaldTrump'
+subtitle: "MTH 365: Intro to Data Science"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+The data set `TrumpTweets.csv` contains all 42,000+ tweets posted on the @realDonaldTrump twitter account. (I will download and post this data set during Dead Week, so the numbers will change.)
+
+```{r}
+TrumpTweets <- read.csv("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Labs/TrumpTweets.csv", quote="")
+```
+
+Your task for the final MTH 365 lab is to analyze this data. You'll need to use ideas from the entire course to complete the lab. Have fun!
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(tidytext)
+```
+
+We'll break this data up into three sub-data sets: Trump's tweets as President of the United States, Trump's tweets while running for President, and Trump's tweets as a private citizen.
+
+- Date of the inauguration: January 20, 2017
+- Date Trump launched his campaign: June 16, 2015
+
+The code below uses the `lubridate` package in `R` to create a data set containing Trump's tweets as President.
+
+```{r, warning=FALSE, message=FALSE}
+library(lubridate)
+TrumpTweets$date <- mdy_hms(TrumpTweets$created_at)
+inauguration <- mdy('January 20, 2017')
+Tweets_President <- TrumpTweets %>% filter(date >= inauguration)
+```
+
+> 1. Since becoming President, how many tweets have been sent from @realDonaldTrump?
+
+> 2. Create data sets for candidate Trump and private citizen Trump. How many tweets are in each of your data sets?
+
+> 3. Since becoming President, which words or phrases are most common in Trump's tweets? Create plots showing the most common single words and most common bigrams, and explain what they tell you.
+
+- You may want to remove `stop_words`. The President has a proclivity for retweeting and sharing links, so it might also be a good idea to remove the following list:
+
+```{r}
+words_remove <- tibble(word=c('https', 't.co', 'amp', 'rt', 'http'))
+```
+
+- Your plots should be "publication-quality". This means you should include updated axis labels and titles and change the plotting color.
+
+> 4. Which words or phrases were most common in Trump's tweets as a Presidential candidate or private citizen? Create plots showing the most common single words and most common bigrams, and explain what they tell you.
+
+> 5. Use sentiment analysis to track the emotional sentiments expressed in Trump's tweets since becoming President. Create a time plot of the sentiments, and explain what it tells you.
+
+- Your plots should be "publication-quality". This means you should include updated axis labels and titles and change the plotting color.
+- Your results might be different depending on whether you choose to remove the stop words.
+- You can use the `R` chunk below to get started.
+
+```{r}
+tweet_df <- tibble(tweet=1:nrow(Tweets_President),
+          text=as.character(Tweets_President$text),
+          date=Tweets_President$date)
+
+tidy_tweet2 <- tweet_df %>% 
+  unnest_tokens(word, text)
+
+tweet_sentiment <- tidy_tweet2 %>% inner_join(get_sentiments("bing"))
+```
+
+> 6. On September 24, 2019, Speaker of the House Nancy Pelosi announced a formal impeachment inquiry into President Trump. Create a fourth subset of the data, representing tweets since the impeachment announcement. Did the impeachment announcement mark a difference in the most common words or phrases in Trump's tweets? Did it mark a change in sentiment? Use the data to support your conclusions.

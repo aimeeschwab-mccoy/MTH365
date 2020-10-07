@@ -1,0 +1,296 @@
+---
+title: 'Section 2: Data Visualization'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r Sys.Date()`"
+output: 
+  ioslides_presentation:
+    widescreen: true
+---
+
+<style>
+h2 { 
+ color: #0054a6;		
+}
+h3 { 
+ color: #019cdb;	
+}
+</style>
+
+## Apologies for cross-teaching
+
+Sorry MTH 361 students.
+
+## Recommended Reading and Packages
+
+- _Modern Data Science with R_ Ch. 2: Data Visualization
+- _Modern Data Science with R_ Ch. 3: A Grammar for Graphics
+
+```{r, warning=FALSE, message=FALSE}
+#install.packages(dslabs)
+library(dslabs)
+
+#install.packages(tidyverse)
+library(tidyverse)
+```
+
+## `ggplot2`
+
+`ggplot2` is an R package for "declaratively creating graphics"
+
+- https://ggplot2.tidyverse.org/reference/
+
+\vfill
+
+\textcolor{CosmoBlue}{Basic Format of a Plot}
+
+`data and aesthetics + plot type + options`
+
+## Hate crimes and income inequality
+
+<div class="red2">__Example__:</div>
+
+A FiveThirtyEight article published in 2017 claimed that higher rates of hate crimes were tied to greater income inequality.
+
+https://fivethirtyeight.com/features/higher-rates-of-hate-crimes-are-tied-to-income-inequality/
+
+- FiveThirtyEight publishes their data sets - let's investigate for ourselves.
+
+## Hate crimes and income inequality
+
+```{r, echo=-1}
+hate_crimes <- read.csv("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Data/hate_crimes.csv")
+glimpse(hate_crimes)
+```
+
+## A simple plot?
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=median_income, y=hate_crimes_fbi)) +
+  geom_point()
+```
+
+## A simple plot
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=median_income, y=hate_crimes_fbi))
+```
+
+## A better plot 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=median_income, y=hate_crimes_fbi)) +
+  geom_text(aes(label=state))
+```
+
+## An even better plot 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=median_income, y=hate_crimes_fbi)) + 
+  geom_text(aes(label=state, color=region))
+```
+
+## Measuring income inequality 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=gini_index, y=hate_crimes_fbi)) + 
+  geom_point(aes(color=region))
+```
+
+## Does source matter? 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=gini_index, y=hate_crimes_splc)) + 
+  geom_point(aes(color=region))
+```
+
+## Adding labels 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=gini_index, y=hate_crimes_fbi)) + 
+  geom_point(aes(color=region)) + 
+  labs(x='Gini Index', y='Hate Crimes (FBI, Sept. 2016)')
+```
+
+## Point size 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=gini_index, y=hate_crimes_fbi)) + 
+  geom_point(aes(color=region, size=unemployment)) + 
+  labs(x='Gini Index', y='Hate Crimes (FBI, Sept. 2016)')
+```
+
+## Adding "facets" 
+
+```{r, warning=FALSE}
+ggplot(hate_crimes, aes(x=gini_index, y=hate_crimes_fbi)) + 
+  geom_point(aes(color=region, size=unemployment)) + 
+  labs(x='Gini Index', y='Hate Crimes (FBI, Sept. 2016)')
+  facet_wrap(~region, nrow=1)
+```
+
+## Hate crimes and income inequality
+
+<div class="green2">__Exploration__:</div>
+
+In teams of two or three, take a few minutes to create some new visualizations using this data. What else can you learn about hate crimes and income inequality?
+
+```{r}
+names(hate_crimes)
+```
+
+## Weather patterns
+
+<div class="red2">__Example__:</div>
+
+The data set `Weather` contains data on weather-related variables for several world cities.
+
+```{r}
+#install.packages(mosaicData)
+library(mosaicData)
+data(Weather)
+```
+
+## Weather patterns
+
+```{r}
+glimpse(Weather)
+```
+
+## Weather patterns
+
+```{r}
+ggplot(Weather, aes(y=avg_temp)) + geom_boxplot()
+```
+
+## Weather patterns
+
+```{r}
+ggplot(Weather, aes(y=avg_temp, group=city)) + geom_boxplot(aes(color=city))
+```
+
+## Weather patterns
+
+```{r}
+ggplot(Weather, aes(x=date, y=avg_temp))+geom_point()
+```
+
+
+## Weather patterns
+
+```{r}
+ggplot(Weather, aes(x=date, y=avg_temp)) + 
+  geom_point(aes(color=city))
+```
+
+## Weather patterns in Chicago
+
+```{r}
+Chicago <- Weather %>% filter(city=='Chicago')
+ggplot(Chicago, aes(x=date, y=avg_temp)) + 
+  geom_point(color='blue')
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=date, y=avg_temp)) + 
+  geom_point(aes(color=events))
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=date, y=avg_temp)) + 
+  geom_smooth()
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=date, y=avg_temp)) + 
+  geom_smooth()+geom_point()
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=low_temp, y=high_temp)) + 
+  geom_point(aes(color=month))
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=low_temp, y=high_temp)) + 
+  geom_point(aes(color=as.factor(month)))
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_temp)) + 
+  geom_histogram()
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_temp)) + 
+  geom_density(fill='lightblue')
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_temp)) + 
+  geom_density(fill='lightblue', alpha=0.5)
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_temp, group=month)) +
+  geom_density(aes(color=as.factor(month), 
+                   fill=as.factor(month)), alpha=0.5)
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_temp, group=month)) +
+  geom_density(aes(color=as.factor(month),                                                    fill=as.factor(month)), alpha=0.5) +
+  facet_wrap(~month, nrow=3)
+```
+
+## Weather patterns in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=avg_vis, group=month)) +
+  geom_density(aes(color=as.factor(month), 
+                   fill=as.factor(month)), alpha=0.5) +
+  facet_wrap(~month, nrow=3)
+```
+
+## Weather events
+
+```{r}
+ggplot(Weather, aes(x=events)) + 
+  geom_bar()
+```
+
+## Weather events
+
+```{r}
+ggplot(Weather, aes(x=events)) + 
+  geom_bar() + 
+  coord_flip()
+```
+
+## Weather events in Chicago
+
+```{r}
+ggplot(Chicago, aes(x=events)) + 
+  geom_bar() + 
+  coord_flip() +
+  facet_wrap(~year, nrow=2)
+```

@@ -1,0 +1,295 @@
+---
+title: 'Section 1: Building A Data Science Toolbox'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r Sys.Date()`"
+output: 
+  ioslides_presentation:
+    widescreen: true
+---
+
+<style>
+h2 { 
+ color: #0054a6;		
+}
+h3 { 
+ color: #019cdb;	
+}
+</style>
+
+
+## Recommended Reading
+
+Today's goal is to get you comfortable working with R, RStudio, and RMarkdown. Some references include:
+
+- _R for Data Science_ Ch. 4: Workflow Basics
+- _R for Data Science_ Ch. 27: RMarkdown
+- _RMarkdown: The Definitive Guide_ Ch. 2: Basics
+- _Getting Used to R, RStudio, and RMarkdown_
+
+## Filling in our toolbox: R and RStudio
+
+1. R (https://cran.r-project.org/)
+2. RStudio (https://www.rstudio.com/)
+3. `tidyverse` (https://www.tidyverse.org/)
+
+## R
+
+`R` is a free software environment and programming language for statistical computing and graphics
+
+- Initially developed by Ross Ihaka and Robert Gentleman at University of Auckland, New Zealand
+- First release: 1995
+- Stable beta: 2000
+- Maintained by the _R Core Development Team_ and the _Comprehensive R Archive Network (CRAN)_
+
+## R
+
+- __Interpreted language__: we interact with R through a "command line" _interpreter_, which translates our "code" to machine code
+- R uses _functions_ to run code
+- Can also implement _object-oriented programming_ (C++, Java, Python) in some circumstances
+- Open source
+
+## Base R overview
+
+The base object in R is a `data.frame`: a data table
+
+- Columns within a data frame are referred to as `vector`s, but can also be initialized on their own
+
+The __workspace__ is your current R working environment and includes any user-defined objects:
+
+- Vectors
+- Matrices
+- Data frames
+- Lists
+- Functions
+
+## Base R: Operators in R
+
+Arithmetic operators:
+
+Operator|Description
+------|----------
+`+`|Addition
+`-`|Subtraction
+`*`|Multiplication
+`/`|Division
+`^` or `**`|Exponentiation
+
+## Base R: Operators in R
+
+<div class="red2">Example:</div>
+
+Carry out the following calculations in R:
+
+1. $7 + (6\times 5^2 + 3)$
+2. $12/6 \times 3/2$
+3. $4^{3\times 2}$
+4. $14 + 18/2 \times 18-7$
+
+## Base R: Operators in R
+
+```{r}
+# Example 1:
+7 + (6*(5^2) + 3)
+
+# Example 2:
+12/6 * 3/2
+```
+
+## Base R: Operators in R
+
+Logical operators:
+
+Operator|Description
+------|----------
+`>` and `<`|Greater to and less than
+`>=` and `<=`|Greater or equal to and 
+`==`|Exactly equal to
+`!=`|Not equal to
+
+
+A single `=` is the "assignment" operator: it can be used inside functions or to assign new objects.
+
+## Base R: Operators in R
+
+<div class="red2">Example:</div>
+
+Save calculations 3 and 4 as new R objects. Is calculation 3 greater than 4?
+
+1. $7 + (6\times 5^2 + 3)$
+2. $12/6 \times 3/2$
+3. $4^{3\times 2}$
+4. $14 + 18/2 \times 18-7$
+
+## Base R: Operators in R
+
+```{r}
+calc3 <- 4^(3*2)
+#calc3 = 4^(3*2)
+calc4 <- 14+18/2*18-7
+#calc4 = 14+18/2*18-7
+
+calc3 > calc4
+```
+
+## Base R overview
+
+`<-` or `=`?
+
+- Same thing, be consistent. 
+- I prefer `<-` (pronounced "gets")
+
+View a saved object?
+
+```{r}
+calc3
+```
+
+## Base R: Importing data
+
+Two common functions for reading in data:
+
+- `read.csv()` (also `read.table()`, `read.txt()`)
+- `read_csv()`
+
+Difference between the two: the class of object created and assumptions made about variables
+
+- More later!
+
+Even easier: __Use the Import Dataset Wizard and save the code generated__
+
+## Base R: Accessing variables in a data frame
+
+```{r}
+data(mtcars)
+names(mtcars)
+mtcars$mpg
+mtcars[,1]
+```
+
+## Base R: Accessing observations in a data frame
+
+```{r}
+data(mtcars)
+names(mtcars)
+mtcars$cyl
+mtcars[3,2]
+```
+
+## Base R: Interacting with variables
+
+```{r}
+mean(mtcars$mpg)
+sd(mtcars$mpg)
+
+mtcars$mpg/mtcars$hp
+```
+
+## Base R: Creating variables
+
+```{r}
+mtcars$mpg >= 24
+mtcars$mpg24 <- mtcars$mpg>=24
+mtcars$mpg24
+```
+
+## Base R: Creating variables
+
+```{r}
+mtcars$mpg_hp <- mtcars$mpg/mtcars$hp
+mtcars$mpg_hp
+
+sqrt(mtcars$mpg_hp)
+```
+
+## Base R: Plotting variables
+
+```{r}
+plot(mtcars$mpg, mtcars$cyl)
+```
+
+## Base R: Plotting variables
+
+```{r}
+plot(mtcars$mpg, mtcars$cyl, pch=mtcars$cyl, col=mtcars$cyl, 
+     xlab='Miles per gallon', ylab='Number of cylinders')
+```
+
+## `tidyverse`: Plotting variables
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+library(tidyverse)
+mtcars %>% ggplot(aes(x=mpg, y=cyl)) + 
+  geom_point(aes(col=as.factor(cyl), pch=as.factor(cyl))) +
+  labs(x='Miles per gallon', y='Number of cylinders') + 
+  guides(col=FALSE, pch=FALSE)
+```
+
+## Interacting with variables
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
+mtcars %>% ggplot(aes(x=mpg, y=cyl)) + 
+  geom_point(aes(col=as.factor(cyl), pch=as.factor(cyl))) +
+  labs(x='Miles per gallon', y='Number of cylinders') + 
+  guides(col=FALSE, pch=FALSE)
+```
+
+## R packages
+
+Because `R` is open source, users can contribute _R packages_ to add additional functions and capabilities (16,681 as of `r Sys.Date()`)
+
+- A complete list can be found at crantastic! (https://crantastic.org/)
+- Pro: New statistical/data science techniques are added to CRAN, Bioconductor (another package repository), GitHub, etc. daily
+- Con: No standard syntax!
+
+## Why RStudio?
+
+Every `R` installation comes with the R Console, so we don't actually need an additional program to interface with R. BUT nearly everyone I know who uses R ALSO uses RStudio to interact with it.
+
+- "Integrated Development Environment"
+- Clean user interface
+- Ability to see loaded datasets, packages, history
+- Write code in separate "scripts" from the console
+- First release: February 2011
+
+## RStudio Console Tour
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/console.png")
+```
+
+## R Markdown
+
+R Markdown provides "an authoring framework for data science". In an R Markdown document, you can:
+
+1. Save and execute code
+2. Generate written reports that can be shared with someone else 
+3. Supported file formats: Word, PDF, HTML, slide shows, handouts, dashboards, Powerpoint (next release...)
+
+## Reproducible research
+
+Excerpt from the _Simply Statistics_ blog: "The Real Reason Reproducible Research is Important""
+
+> _By using the word reproducible, I mean that the original data (and original computer code) can be analyzed (by an independent investigator) to obtain the same results of the original study. In essence, it is the notion that the data analysis can be successfully repeated._
+
+> ... Reproducibility is important because __it is the only thing that an investigator can guarantee about a study.__
+
+- https://simplystatistics.org/2014/06/06/the-real-reason-reproducible-research-is-important/
+
+## Reproducible research
+
+More reasons to do your programming in a reproducible way:
+
+1. __Time saved__: especially important in the professional world
+2. __Time elapsed__: even the best programmers forget how their code runs eventually
+
+## Lab 1: Hello R!
+
+The best way to learn about how R, RStudio, and RMarkdown work is to dive right in!
+
+<div class="green2">
+
+Open __Lab 1: Hello R!__ in BlueLine (you can find it in the "Assignments" tab)
+
+You have the rest of the class period to work. When you're finished, submit the compiled HTML document on BlueLine.
+</div>

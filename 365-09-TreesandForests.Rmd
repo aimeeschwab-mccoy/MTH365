@@ -1,0 +1,657 @@
+---
+title: 'Section 9: Decision Trees and Random Forests'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: ["style.css", 'hygge']
+    lib_dir: libs
+    nature:
+      highlightStyle: magula
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 8: Statistical Learning and Predictive Analytics
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+```
+
+---
+
+## Machine learning
+
+.full-width[.content-box-yellow[__Machine learning__: a method of data analysis that automates analytical model building] ]
+
+- Idea: computers can learn from data, identify patterns and make decisions with minimal human intervention
+
+.red[Example] This section is intended to give you a brief overview of the possibilities of machine learning. For more, take __MTH 366: Machine Learning__ next semester.
+
+---
+
+## Supervised or unsupervised?
+
+Machine learning techniques fall into two categories:
+
+.full-width[.content-box-yellow[__Supervised learning__: the data being studied includes measured outcome variables]]
+
+- We have "right answers" to compare our predictions to
+
+.full-width[.content-box-blue[__Unsupervised learning__: the data does _not_ include outcome variables]]
+
+- We don't know the answers!
+
+---
+
+## Supervised learning
+
+In supervised learning problems, the goal is usually to improve __prediction accuracy__: how well the algorithm predicts the observed outcome variable
+
+- Find a _function_ that accurately describes how different explanatory variables can be combined to make a prediction about a response variable
+
+You're probably familiar with some (simple) supervised learning techniques already:
+
+- Regression!
+
+Some classification algorithms (.red[decision trees], support vector machines) are also supervised problems.
+
+---
+
+## `R` function notation
+
+```{r, eval=FALSE}
+y ~ x1 + x2 + x3
+```
+
+- `y` indicates the response variable or feature we're most interested in (output variable)
+- `x1`, `x2`, and `x3` are potential explanatory variables (input variables)
+
+- `~` should be read as "depends on" or "is a function of"
+
+---
+
+## Classification models
+
+.full-width[.content-box-yellow[__Classifiers__ are models that take a set of explanatory variables and converst them to a probability]]
+
+- The model is a function $f: \mathbb{R}^p \rightarrow (0,1)$ that returns a value $\pi \in (0, 1)$. 
+- When classifying, we can either round the predicted probability $\pi$ to 0 or 1, or report the predicted probability
+
+--
+
+Example you might have seen before: Logistic regression
+
+---
+
+## Decision trees
+
+.full-width[.content-box-yellow[__Decision trees__ are tree-like flowcharts that assign class labels to individual observations]]
+
+Let $D_t =(y_t, \bf{X}_t)$ be the set of records that are associated with _node_ $t$, and let ${y_1, y_2}$ be the possible classes of the response variable.
+
+1. If all records in $D_t$ belong to a single class, say $y_1$, then $t$ is a leaf node labeled as $y_1$.
+2. Otherwise, split the records into at least two child nodes, in such a way that the new nodes _agree_ as much as possible (have the same class). This agreement is called _purity_.
+
+---
+
+## Marijuana legalization
+
+.red[Example]: The General Social Survey is a wide-ranging survey conducted biannually to measure cultural shifts in American society. We can use the GSS to get an idea of how popular opinion has changed.
+
+- This data set is stored as a .csv file on BlueLine.
+
+```{r, echo=-1}
+GSS <- read.csv("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Data/GSS2016.csv")
+names(GSS)
+```
+
+---
+
+## Marijuana legalization
+
+```{r}
+glimpse(GSS)
+```
+
+---
+
+## Marijuana legalization
+
+.red[Note]: I did not choose the variable names.
+
+```{r}
+GSS %>% filter(YEAR==2016) %>%
+  group_by(GRASS) %>%
+  summarize(n=n())
+```
+
+---
+
+## Marijuana legalization
+
+```{r}
+# Add this to the STUDENT notes
+GSS2 <- GSS %>% 
+  filter(!GRASS %in% c('Not applicable', 'No answer')) %>%  #<<
+ mutate(AGE = as.numeric(AGE),
+         YEAR = as.numeric(YEAR))
+
+GSS2 %>% group_by(GRASS) %>%
+  summarize(n=n())
+```
+
+---
+
+## Avoiding overfitting
+
+One concern in model fitting is __overfitting__: developing a model that works _too well_ on the observed data, and isn't generalizable to the rest of the data.
+
+To avoid overfitting, we __cross-validate__ by splitting the data.
+
+- Training data: used to _fit_ the model
+- Test data: used to _test_ the model
+
+--
+
+How many observations should go in the test v. training data set?
+
+- It depends. Common splits are 50-50, 90-10...
+
+---
+
+## Testing data v. training data
+
+```{r}
+# Drop unused levels of the GRASS variable
+GSS2$GRASS <- factor(GSS2$GRASS)
+
+# Use a 50-50 split
+test_id <- sample(1:nrow(GSS2), #<<
+                  size=round(0.5*nrow(GSS2))) #<<
+
+TEST <- GSS2[test_id,]
+TRAIN <- GSS2[-test_id,]
+```
+
+---
+
+## Null model
+
+How many people in the training data set support marijuana legalization?
+
+```{r}
+TRAIN %>% group_by(GRASS) %>% summarize(n=n())
+```
+
+- If we predict that everyone supports legalizing marijuana, what's our _accuracy_?
+
+
+---
+
+## Decision trees: `rpart`
+
+To fit a decision tree, use the `rpart` library and function (`R part`ition).
+
+```{r}
+#install.packages(`rpart`)
+library(rpart)
+rpart(GRASS~AGE, data=TRAIN)
+```
+
+---
+
+## Decision trees
+
+```{r}
+plot(rpart(GRASS~AGE + PARTYID, data=TRAIN))
+```
+
+---
+
+## Decision trees: `rpart.plot`
+
+We can make better plots using the `rattle` and `rpart.plot` packages.
+
+```{r, eval=FALSE}
+#install.packages(c("rattle", "rpart.plot"))
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+
+tree <- rpart(GRASS~AGE, data=TRAIN)
+fancyRpartPlot(tree)
+fancyRpartPlot(rpart(GRASS~AGE, data=TRAIN))
+```
+
+---
+
+## Decision trees: `rpart.plot`
+
+```{r, echo=5:6, warning=FALSE, message=FALSE, fig.width=10, fig.height=5}
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+tree <- rpart(GRASS~AGE, data=TRAIN)
+levels(TRAIN$GRASS)
+fancyRpartPlot(tree)
+```
+
+---
+
+## Decision trees
+
+```{r, fig.width=10, fig.height=5}
+TRAIN %>% ggplot(aes(x=GRASS, y=AGE)) +
+  geom_jitter(alpha=0.5, aes(col=GRASS)) +  
+  geom_hline(yintercept=45, col='black')
+```
+
+---
+
+## Evaluation: complexity parameter
+
+- Complexity parameter (`CP`) is the reduction in relative error at each node of the tree
+
+```{r}
+printcp(tree)
+```
+
+---
+
+## Evaluation: confusion matrix
+
+```{r}
+TRAIN <- TRAIN %>% 
+  mutate(PREDICT = predict(tree, type='class'))
+
+TRAIN %>% group_by(GRASS, PREDICT) %>%
+  summarize(n=n()) %>%
+  spread(GRASS, n)
+```
+
+- Where are we classifying "well"?
+- Where are we misclassifying?
+---
+
+## Classification accuracy
+
+```{r}
+confusion <- tally(PREDICT~GRASS, data=TRAIN)
+confusion
+sum(diag(confusion))/nrow(TRAIN)
+```
+
+---
+
+## Party affiliation?
+
+```{r}
+tree2 <- rpart(GRASS~PARTYID, data=TRAIN)
+fancyRpartPlot(tree2)
+```
+
+---
+
+## Party affiliation?
+
+```{r, fig.width=10, fig.height=5}
+TRAIN <- TRAIN %>% 
+  mutate(PREDICT2 = predict(tree2, type='class'))
+confusion2 <- tally(PREDICT2~GRASS, data=TRAIN)
+confusion2
+sum(diag(confusion2))/nrow(TRAIN)
+```
+
+---
+
+## More complicated trees
+
+```{r}
+tree3 <- rpart(GRASS~PARTYID+AGE, data=TRAIN)
+tree3
+```
+
+---
+
+## More complicated trees
+
+```{r, fig.width=10, fig.height=5}
+fancyRpartPlot(tree3)
+```
+
+---
+
+## More complicated trees
+
+```{r}
+TRAIN <- TRAIN %>% 
+  mutate(PREDICT3 = predict(tree3, type='class'))
+confusion3 <- tally(PREDICT3~GRASS, data=TRAIN)
+confusion3
+sum(diag(confusion3))/nrow(TRAIN)
+```
+
+---
+
+## Credit utilization
+
+.red[Example]: The data set `Credit` in the `ISLR` package contains a random sample of (simulated) data from credit card customers. Data like this are often used by credit card companies to predict and understand consumer behavior. One such behavior is __utilization__: how much of the available credit limit is currently being "used"?
+
+```{r}
+library(ISLR)
+data(Credit)
+head(Credit)
+```
+
+---
+
+## Credit utilization
+
+```{r, message=FALSE, warning=FALSE}
+Credit <- Credit %>% mutate(Utilization = Balance/Limit)
+
+library(skimr)
+Credit %>% skim(Utilization)
+```
+
+---
+
+## Credit utilization
+
+.red[Example]: Which customers are more likely to use more than 10% of their available credit?
+
+```{r}
+Credit <- Credit %>% mutate(More10 = Utilization>=0.1)
+
+test_id_CREDIT <- sample(1:nrow(Credit), 
+                         size=round(0.5*nrow(Credit)))
+TRAIN_CREDIT <- Credit[-test_id_CREDIT,]
+TEST_CREDIT <- Credit[test_id_CREDIT,]
+```
+
+---
+
+## Credit utilization
+
+```{r}
+rpart(as.factor(More10)~Rating, data=TRAIN_CREDIT)
+```
+
+---
+
+## Credit utilization
+
+```{r, fig.width=10, fig.height=5}
+tree2 <- rpart(as.factor(More10)~Rating, data=TRAIN_CREDIT)
+fancyRpartPlot(tree2)
+```
+
+---
+
+## Credit utilization
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+TRAIN_CREDIT %>% ggplot(aes(x=More10, y=Rating)) + geom_jitter(alpha=0.5, aes(col=More10)) +  geom_hline(yintercept=289, col='black')
+```
+
+---
+
+## Credit utilization
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+TRAIN_CREDIT %>% ggplot(aes(x=More10, y=Rating)) + geom_jitter(alpha=0.5, aes(col=More10)) +  geom_hline(yintercept=c(289, 395), col=c('black', 'blue'))
+```
+
+---
+
+## Credit utilization
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+TRAIN_CREDIT %>% ggplot(aes(x=More10, y=Rating)) + geom_jitter(alpha=0.5, aes(col=More10)) +  geom_hline(yintercept=c(289, 395, 297), col=c('black', 'black', 'blue'))
+```
+
+---
+
+## Credit utilization
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+TRAIN_CREDIT %>% ggplot(aes(x=More10, y=Rating)) + geom_jitter(alpha=0.5, aes(col=More10)) +  geom_hline(yintercept=c(289, 395, 297, 319, 356, 375), col=c('black', 'black', 'black', 'blue', 'green', 'orange'))
+```
+
+---
+
+## Random forests
+
+.full-width[.content-box-yellow[__Random forest__: is a collection of decision trees that are combined (aggregated) by majority rule]]
+
+1. Choose the number of decision trees to grow (`ntree`) and the number of variables in each tree (`mtry`).
+2. Randomly select rows of the data frame _with replacement_. 
+3. Randomly select `mtry` variables from the data frame.
+4. Build a decision tree on the resulting data set.
+5. Repeat.
+
+---
+
+## Credit utilization
+
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
+#install.packages('randomForest')
+library(randomForest)
+# The response variable needs to be a factor
+forest <- randomForest(as.factor(More10)~Income+Rating+Cards+
+                         Age+Education+Gender+Student+Married+
+                         Ethnicity, data=TRAIN_CREDIT, 
+                       ntree=201, mtry=3)
+```
+
+---
+
+## Credit utilization
+
+```{r, message=FALSE, warning=FALSE, echo=7}
+#install.packages('randomForest')
+library(randomForest)
+# The response variable needs to be a factor
+forest <- randomForest(as.factor(More10)~Income+Rating+Cards+
+                         Age+Education+Gender+Student+Married+
+                         Ethnicity, data=TRAIN_CREDIT, ntree=201, mtry=3)
+forest
+```
+
+---
+
+## Credit utilization
+
+```{r}
+importance(forest) %>% as.data.frame() %>% 
+  rownames_to_column() %>% 
+  arrange(desc(MeanDecreaseGini))
+```
+
+---
+
+## Credit utilization
+
+```{r}
+varImpPlot(forest)
+```
+
+---
+
+## Credit utilization: Rating and Income?
+
+```{r, fig.width=10, fig.height=5}
+tree3 <- rpart(as.factor(More10)~Rating+Income, 
+               data=TRAIN_CREDIT)
+fancyRpartPlot(tree3)
+```
+
+---
+
+## Credit utilization: four groups?
+
+.red[Example]: What if we want to split the credit utilization rates into four levels, based on the quartiles of the data?
+
+```{r}
+TRAIN_CREDIT <- TRAIN_CREDIT %>% 
+  mutate(Quartile = ifelse(Utilization<0.01851, 'Q1', 
+                           ifelse(Utilization<0.09873, 'Q2',
+                           ifelse(Utilization<0.14325, 'Q3', 
+                                  'Q4'))))
+```
+
+---
+
+## Credit utilization: four groups?
+
+```{r, fig.width=10, fig.height=5}
+tree4 <- rpart(as.factor(Quartile)~Rating, data=TRAIN_CREDIT)
+fancyRpartPlot(tree4)
+```
+
+---
+
+## Credit utilization: four groups
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+library(RColorBrewer)
+cols <- brewer.pal(6, 'Set1')
+TRAIN_CREDIT %>% ggplot(aes(x=Quartile, y=Rating)) + 
+  geom_jitter(alpha=0.5, aes(col=Quartile)) +  
+  scale_color_manual(values=c(cols[3], cols[2], cols[5], cols[4]))
+```
+
+---
+
+## Marijuana legalization
+
+```{r, eval=FALSE}
+forest_grass <- randomForest(as.factor(GRASS)~NEWSFROM+ 
+                 HAPPY+RELIG+COURTS+ENERGY+EDUC+ENVIR+
+                 POLVIEWS+PARTYID+REGION+INCOME+SEX+ 
+                 DEGREE+AGE+MARITAL+BALLOT, data=TRAIN, 
+                 ntree=201, mtry=3)
+forest_grass
+```
+
+---
+
+## Marijuana legalization
+
+```{r, eval=FALSE}
+forest_grass <- randomForest(as.factor(GRASS)~NEWSFROM+ 
+                 HAPPY+RELIG+COURTS+ENERGY+EDUC+ENVIR+
+                 POLVIEWS+PARTYID+REGION+INCOME+SEX+ 
+                 DEGREE+AGE+MARITAL+BALLOT, data=TRAIN, 
+                 ntree=201, mtry=5)
+```
+
+---
+
+## Marijuana legalization
+
+```{r, echo=-1}
+forest_grass <- randomForest(as.factor(GRASS)~NEWSFROM+ 
+                 HAPPY+RELIG+COURTS+ENERGY+EDUC+ENVIR+
+                 POLVIEWS+PARTYID+REGION+INCOME+SEX+ 
+                 DEGREE+AGE+MARITAL+BALLOT, data=TRAIN, 
+                 ntree=201, mtry=5)
+forest_grass
+```
+
+---
+
+## Marijuana legalization
+
+```{r}
+importance(forest_grass) %>% as.data.frame() %>% 
+  rownames_to_column() %>% arrange(desc(MeanDecreaseGini))
+```
+
+---
+
+## Marijuana legalization
+
+```{r, fig.width=10, fig.height=5}
+tree5 <- rpart(GRASS~AGE+REGION+POLVIEWS, data=TRAIN)
+fancyRpartPlot(tree5)
+```
+
+---
+
+## When to use random forests?
+
+1. Selecting variables. 
+2. Avoids overfitting.
+3. Classification _and regression_.
+
+---
+
+## Credit card utilization
+
+```{r}
+head(TRAIN_CREDIT)
+```
+
+---
+
+## Credit card utilization
+
+```{r, fig.width=10, fig.height=5}
+tree6 <- rpart(Utilization~Rating, data=TRAIN_CREDIT)
+fancyRpartPlot(tree6)
+```
+
+
+---
+
+## Credit card utilization
+
+1. Who has the highest credit card utilization?
+2. Who has the lowest credit card utilization?
+3. What if we introduce additional variables?
+
+---
+
+## Credit card utilization
+
+```{r}
+forest_cards <- randomForest(Utilization ~ Income + Rating + Cards + 
+                               Age + Gender + Student + Married + 
+                               Ethnicity, data=TRAIN_CREDIT, 
+                 ntree=201, mtry=5, importance=TRUE)
+```
+
+---
+
+## Credit card utilization
+
+```{r}
+forest_cards
+```
+
+---
+
+## Credit card utilization
+
+```{r}
+varImpPlot(forest_cards)
+```
+
+--- 
+
+## Credit card utilization
+
+```{r, eval=FALSE}
+?varImpPlot
+```
+
+> Here are the definitions of the variable importance measures. The first measure is computed from permuting OOB data: For each tree, the prediction error on the out-of-bag portion of the data is recorded (error rate for classification, MSE for regression). Then the same is done after permuting each predictor variable. The difference between the two are then averaged over all trees, and normalized by the standard deviation of the differences. If the standard deviation of the differences is equal to 0 for a variable, the division is not done (but the average is almost always equal to 0 in that case).
+
+> The second measure is the total decrease in node impurities from splitting on the variable, averaged over all trees. For classification, the node impurity is measured by the Gini index. For regression, it is measured by residual sum of squares.
+
+

@@ -1,0 +1,296 @@
+---
+title: 'Lab 09: Making It Shiny'
+subtitle: "MTH 365: Intro to Data Science"
+author: "Your Name Here"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+This lab is designed to walk you through the steps of creating and deploying your own RShiny web applet. First, what the heck is Shiny?
+
+__Shiny__ is an R package that makes it easy to build interactive web applications straight from R. 
+
+As always, your first step should be to install the `shiny` package.
+
+```{r}
+# install.packages('shiny')
+```
+
+## Example: The simplest app ever...
+
+Let's write your first Shiny app.
+
+```{r}
+library(shiny)
+server <- function(input, output, session) {}
+ui <- basicPage('This is my first Shiny app.')
+
+shinyApp(ui=ui, server=server)
+```
+
+In the background, Shiny uses a web design framework called Twitter Bootstrap. This provides a basic layout and some minimal styling for your app.
+
+Running the function `shinyApp()` essentially takes your code and compiles it to a web-friendly language, just like knitting an RMarkdown does. The difference between a Shiny app and a Markdown document is __interaction__. When you create a Shiny app, you're building an interactive data "dashboard". 
+
+## Examples
+
+There are a few built-in examples we can use to get an idea of the features Shiny provides.
+
+```{r, eval=FALSE}
+runExample('01_hello')
+```
+
+Here's the Shiny code required to build this example. There are two basic parts to any Shiny app:
+
+- `ui`: This defines the layout and inputs for the `u`ser `i`nterface.
+- `server`: This is where the R code that runs behind the Shiny app (on the `server`) needs to go.
+
+```{r, eval=FALSE}
+library(shiny)
+
+# Define UI for app that draws a histogram ----
+ui <- fluidPage(
+
+  # App title ----
+  titlePanel("Hello Shiny!"),
+
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+
+      # Input: Slider for the number of bins ----
+      sliderInput(inputId = "bins",
+                  label = "Number of bins:",
+                  min = 1,
+                  max = 50,
+                  value = 30)
+
+    ),
+
+    # Main panel for displaying outputs ----
+    mainPanel(
+
+      # Output: Histogram ----
+      plotOutput(outputId = "distPlot")
+
+    )
+  )
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+
+    hist(x, breaks = bins, col = "#75AADB", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+
+    })
+
+}
+
+# Create Shiny app ----
+shinyApp(ui = ui, server = server)
+```
+
+Try some other examples! Run these one at a time, and see what they create.
+
+- runExample("02_text")       
+- runExample("03_reactivity")  
+- runExample("04_mpg")         
+- runExample("05_sliders")     
+- runExample("06_tabsets")    
+- runExample("07_widgets") 
+
+```{r, eval=FALSE}
+runExample("03_reactivity")
+```
+
+### Resources
+
+- Zev Ross has an incredibly detailed reference guide for building Shiny apps: http://zevross.com/blog/2016/04/19/r-powered-web-applications-with-shiny-a-tutorial-and-cheat-sheet-with-40-example-apps/
+- _Modern Data Science with R_: Ch. 11.3 "Interactive web apps with Shiny"
+
+### Troubleshooting
+
+You'll find instructions and tips in this lab document, however, you should NOT write your Shiny apps in a Markdown document. Why??
+
+- Markdown documents compile as "static HTML" files - dynamic inputs aren't allowed. 
+- However, you CAN run Shiny code in a Markdown document using the "play" button. It just won't compile correctly when you knit.
+
+Instead, go to File -> New File -> Shiny Web App... to start building your app. 
+
+## Tutorial: Exploring the `mtcars` dataset
+
+The `mtcars` data set contains data from a 1974 issue of _Motor Trend_ magazine. Data on 10 aspects of automobile design and performance were collected for 32 automobiles.
+
+Variables|Description
+---|---
+`mpg`| Miles per gallon
+`cyl`|Number of cylinders
+`disp`|Displacement (cubic inches)
+`hp`|Gross horsepower
+`drat`|Rear axle ratio
+`wt`|Weight (in thousands of pounds)
+`qsec`|1/4 mile time (in seconds)
+`vs`|Engine (0 = v-shaped, 1 = straight)
+`am`|Transmission (0 = automatic, 1 = manual)
+`gear`|Number of forward gears
+`carb`|Number of carburetors
+
+Let's build a Shiny web app to visualize how miles per gallon is affected by various variables in this data set.
+
+```{r}
+data(mtcars)
+
+hist(mtcars$mpg, col='cyan', main='Mileage Per Gallon')
+```
+
+> 1. Start by modifying the user interface.
+
+- Update the `titlePanel` with a relevant title. 
+- We'll start with a histogram. How many bins might be appropriate for the `mpg` variable? Modify the `sliderInput` to cover a range of 5-10 bin widths.
+
+Run your app, and make sure the changes you've created work the way you want them to.
+
+> 2. Next, change the data. 
+
+Look for the `renderPlot()` function in the `server` logic. 
+
+- Change `x` to take the `mpg` variable in the `mtcars` data set.
+- Change the histogram color to a color of your choice.
+- Add an axis label to your histogram (`xlab=_____`) and suppress the main title (`main=''`).
+
+Note: The example Shiny template that you begin with in R uses "base R" instead of `tidyverse` to create plots. Since our goal for today is to get the hang of how Shiny works, and not create "publication-quality" visulations, that's okay. For Mini-Project 3, I'd like to see you use `ggplot` style graphics.
+
+Run your app.
+
+> 3. Let's add a second plot for horsepower.
+
+- Copy the `output$distPlot` code segment, and paste it below your code (within the `server` call). Rename your output.
+- Change the histogram variable to the `hp` variable in the `mtcars` data set. 
+- Change the histogram color to a color of your choice, and modify the axis labels/title.
+- Look for the `mainPanel()` function. Add your new plot to the `plotOutput` in this function.
+
+```{r, eval=FALSE}
+      # Show a plot of the generated distribution
+      mainPanel(
+         plotOutput("distPlot"),
+         plotOutput(__________)
+      )
+```
+
+Run your app.
+
+> 4. Now let's improve the user interface. 
+
+- Add a description of this data set in your sidebar.
+- Move the sidebar to the right side of your app.
+
+```{r, eval=FALSE}
+   # Sidebar with a slider input for number of bins 
+   sidebarLayout(position='right',
+      sidebarPanel(
+        "_____________________",
+         sliderInput("bins",
+                     "Number of bins:",
+                     min = 2,
+                     max = 10,
+                     value = 5)
+      ),
+```
+
+- Add a header and description before each plot in your main panel. The `h1()` and `h2()` functions create headers (as you increase the number, you decrease the size of the header), and the `p()` function creates plain text.
+
+```{r, eval=FALSE}
+      # Show a plot of the generated distribution
+      mainPanel(h1(______),
+                p(______),
+                h2(______, align='center'),
+                  plotOutput("distPlot"),
+                  p(______),
+                h2(______, align='center'),
+                  plotOutput('distPlot2'),
+                  p(______)
+      )
+```
+
+Run your app.
+
+A __widget__ is a web element that your users can interact with. You've got one already: a _slider_ that changes the number of bins. Let's add more.
+
+> 5. Create a new widget that changes the color of your histogram.
+
+- Choose any four colors to use as options in your select input widget.
+
+__DO NOT__ run your app.
+
+> 6. Create a new widget that allows users to select either cars with automatic transmissions only, cars with manual transmissions only, or the entire data set.
+
+```{r, eval=FALSE}
+   # Sidebar with a slider input for number of bins 
+   sidebarLayout(position='right',
+      sidebarPanel(
+        "The `mtcars` data set contains data from a 1974 issue of _Motor Trend_ magazine. Data on 10 aspects of automobile design and performance wre collected for 32 automobiles.",
+         sliderInput("bins",
+                     "Number of bins:",
+                     min = 2,
+                     max = 10,
+                     value = 5),
+        
+        selectInput("col", 
+                    label = "Choose a plot color:",
+                    choices = list(_____, 
+                                   _____,
+                                   _____, 
+                                   _____),
+                    selected = _____),
+        
+        selectInput("data", 
+                    label = "Choose a subgroup:",
+                    choices = list("Automatic transmissions",
+                                   "Manual transmissions", 
+                                   "All cars"),
+                    selected = "All cars")
+      ),
+```
+
+__DO NOT__ run your app.
+
+> 7. Link your new widget inputs to the plot options in the `server` panel.
+
+- There are now three `input` values: `bins`, `col`, and `data`.
+- To link the plot color to your histogram, set the plotting color to `col = input$col`.
+- Linking the data is harder. The sample code below will take the `data` input, and match it up with the subset of the data we want. Modify this for the horsepower.
+
+```{r, eval=FALSE}
+x <- switch(input$data, 
+                "Automatic transmissions" = subset(mtcars, am==0)$mpg,
+                "Manual transmissions" = subset(mtcars, am==1)$mpg,
+                "All cars" = mtcars$mpg)
+```
+
+Run your app.
+
+> 8. Finally, add a description on your app of how miles per gallon and horsepower change depending on engine type.'
+
+Run your app.
+
+------
+
+When you're finished, upload `app.R` to BlueLine.
+

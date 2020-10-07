@@ -1,0 +1,594 @@
+---
+title: 'Section 7: Statistical Foundations'
+author: 'MTH 365: Introduction to Data Science'
+date: "Updated `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: "style.css"
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 7: Statistical Foundations
+
+For additional background/refreshers: _OpenIntro Statistics, 3rd Edition_ (available on BlueLine or openintro.org))
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+#install.packages(`infer`)
+library(infer)
+library(mosaic)
+```
+
+---
+
+## Isn't this data science?
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/datascience.png")
+```
+
+---
+
+## Statistics
+
+```{r, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("Images/statistics.png")
+```
+
+- A solid understanding of the basic principles of statistics is important for effectively working with data. 
+- If you've taken a statistics course before, some of this will be review.
+
+---
+
+## Samples and populations
+
+__Big Idea__: Statisticians use a _sample_ of data to make inferences about a larger _population_.
+
+- Why sample?
+
+
+
+- Requirements of a "good" sample?
+
+
+
+---
+
+## Sampling from a population
+
+<p style="color:#e41a1c";>__Example__:</p> You've been asked to develop a travel policy for business travelers going from New York City to Chicago. Assume that the `nycflights13` data sets represents the complete _population_ of flights. 
+
+1. We could use this complete population to develop the policy -- but that would only be generalizable to 2013.
+2. More likely, we would take a sample of data that are already available. We'll sample from the `nycflights13` data set.
+
+---
+
+## NYC -> Chicago
+
+```{r}
+library(nycflights13)
+Chicago <- flights %>%
+  filter(dest %in% c('ORD', 'MDW'), !is.na(arr_delay))
+nrow(Chicago)
+```
+
+---
+
+## NYC -> Chicago
+
+```{r}
+# What does this do?
+set.seed(365)
+Sample100 <- Chicago %>%
+  sample_n(size=100)
+glimpse(Sample100)
+```
+
+---
+
+## NYC -> Chicago
+
+How long of a delay should we expect?
+
+```{r, warning=FALSE, message=FALSE}
+Sample100 %>% summarize(mean=mean(arr_delay), min=min(arr_delay), 
+                        max=max(arr_delay), sd=sd(arr_delay))
+```
+
+---
+
+## NYC -> Chicago
+
+How long of a delay should we expect?
+
+```{r}
+Sample100 %>% summarize(q05=quantile(arr_delay, 0.05), 
+                        q25=quantile(arr_delay, 0.25),
+                        median=median(arr_delay), 
+                        q75=quantile(arr_delay, 0.75), 
+                        q95=quantile(arr_delay, 0.95))
+```
+
+---
+
+## NYC -> Chicago
+
+How long of a delay should we expect?
+
+```{r, warning=FALSE, message=FALSE}
+library(skimr)
+Sample100 %>% skim(arr_delay, dep_delay)
+
+favstats(~arr_delay, data=Sample100)
+```
+
+---
+
+## NYC -> Chicago
+
+```{r}
+Chicago %>% mutate(less90 = arr_delay<=90) %>% 
+  group_by(less90) %>% 
+  summarize(n=n())
+```
+
+---
+
+## Sample statistics
+
+__Statistic__: a number that summarizes data _from a sample_
+
+Some common notation for sample statistics
+
+- Mean = $\bar{x}$
+- Proportion = $\hat{p}$
+- Median = $m$
+- Standard deviation = $s$
+- Sample size = $n$
+
+---
+
+## Sampling distribution
+
+Sample statistics depend completely on the data. _Different samples of data will have different sample statistics!_
+
+__Sampling distribution__: distribution of a sample statistic
+
+---
+
+## Sampling distribution
+
+<p style="color:#e41a1c";>__Example__:</p> What is the sampling distribution of the mean arrival delay?
+
+```{r}
+n <- 100  # Sample size
+Chicago %>% sample_n(size=100) %>% 
+  summarize(mean=mean(arr_delay))
+```
+
+---
+
+## Sampling distribution
+
+Let's take some more samples.
+
+```{r, echo=FALSE}
+Chicago %>% sample_n(size=100) %>% summarize(mean=mean(arr_delay))
+
+Chicago %>% sample_n(size=100) %>% summarize(mean=mean(arr_delay))
+
+Chicago %>% sample_n(size=100) %>% summarize(mean=mean(arr_delay))
+
+Chicago %>% sample_n(size=100) %>% summarize(mean=mean(arr_delay))
+```
+
+---
+
+## Sampling distribution
+
+Let's speed this up.
+
+```{r}
+SampleMeans <- Chicago %>% 
+  rep_sample_n(size=100, reps=1000) %>% 
+  group_by(replicate) %>% 
+  summarize(mean=mean(arr_delay),
+            sd=sd(arr_delay))
+
+SampleMeans %>% skim(mean)
+```
+
+---
+
+## Sampling distribution
+
+```{r, echo=FALSE}
+ggplot(SampleMeans, aes(x=mean))+geom_density(fill='#019cdb', alpha=0.5)+labs(x='Sampling Distribution of Sample Mean')
+```
+
+---
+
+## Standard error
+
+__Standard error__: the standarad deviation of the sampling distribution
+
+<p style="color:#e41a1c";>__Example__:</p> What's the standard error of the sample mean?
+
+```{r}
+SampleMeans %>% skim(mean)
+```
+
+---
+
+## Approximate 95% confidence interval
+
+A general __confidence interval__ (range of plausible values for the population parameter, based on sample data) is
+
+$$sample \ statistic \pm 2\times standard \ error$$
+
+- Most of the time, our sample statistic will be less than two standard errors away from the true (unknown) population parameter
+
+- Result of the _Central Limit Theorem_
+
+---
+
+## Approximate 95% confidence interval
+
+<p style="color:#e41a1c";>__Example__:</p> Calculate and interpret an approximate 95% confidence interval for the mean arrival delay.
+
+```{r}
+SampleMeans %>% skim(mean)
+```
+
+---
+
+## Effect of sample size?
+
+<p style="color:#6a3d9a";>__Predict__:</p>  Simulate 1,000 repeated randoms samples of size $n=50$, $n=100$, $n=500$. How do you think the sample size will affect the sampling distribution?
+
+```{r, echo=1:5}
+Means50 <- Chicago %>% 
+  rep_sample_n(size=50, reps=1000) %>% 
+  group_by(replicate) %>% 
+  summarize(mean=mean(arr_delay),
+            sd=sd(arr_delay))
+
+Means100 <- Chicago %>% 
+  rep_sample_n(size=100, reps=1000) %>% 
+  group_by(replicate) %>% 
+  summarize(mean=mean(arr_delay),
+            sd=sd(arr_delay))
+
+Means500 <- Chicago %>% 
+  rep_sample_n(size=500, reps=1000) %>% 
+  group_by(replicate) %>% 
+  summarize(mean=mean(arr_delay),
+            sd=sd(arr_delay))
+```
+
+---
+
+## Effect of sample size?
+
+```{r, eval=FALSE}
+Means <- rbind(Means50 %>% mutate(n=50), 
+               Means100 %>% mutate(n=100), 
+               Means500 %>% mutate(n=500))
+ggplot(dat=Means, aes(x=mean)) + 
+  geom_density(aes(fill=as.factor(n))) + 
+  facet_grid(~n)+xlab('Sample means') +
+  guides(fill=FALSE)
+```
+
+---
+
+## Effect of sample size?
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+Means <- rbind(Means50 %>% mutate(n=50), 
+               Means100 %>% mutate(n=100), 
+               Means500 %>% mutate(n=500))
+ggplot(data=Means, aes(x=mean)) +
+  geom_density(aes(fill=as.factor(n))) +
+  facet_wrap(~n)+xlab('Sample means') +
+  guides(fill=FALSE)
+```
+
+---
+
+## Effect of sample size?
+
+1. For _unbiased_ sample statistics, the sampling distribution will be centered at the population parameter.
+2. A larger sample size produces a standard error that is smaller. In other words, larger samples are more reliable than smaller ones.
+3. For large samples, the sampling distribution tends to be symmetric and bell-shaped (follow a _normal distribution_).
+
+---
+
+## Normal distribution
+
+```{r, echo=FALSE}
+x <- seq(from=-3, to=3, length=1000)
+y <- dnorm(x, mean=0, sd=1)
+data <- as.data.frame(cbind(x, y))
+
+data %>% ggplot(aes(x, y)) + geom_line() + labs(title='Standard Normal Distribution', x='x', y='Density')
+```
+
+---
+
+## Bootstrap
+
+In practice, we only have one sample and not the entire population. A popular technique for approximating the sampling distribution is the __bootstrap__.
+
+- Think of the sample as the best available "plug-in" for the population. 
+- Draw repeated resamples _with replacement_ from the original sample to estimate the variability of the sampling distribution.
+- Bootstrapping does _not_ give us new data, just new information about the target population.
+
+---
+
+## Bootstrap
+
+<p style="color:#e41a1c";>__Example__:</p> Suppose we don't have the entire population - just a random sample of 100 observed flights from NYC to Chicago. How can we find a confidence interval for the 95th percentile of arrival times?
+
+```{r}
+Sample100 <- Chicago %>%
+  sample_n(size=100)
+glimpse(Sample100)
+```
+
+---
+
+## Bootstrap
+
+```{r}
+Bootstrap_Means <- Sample100 %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+```
+
+---
+
+## Bootstrap
+
+```{r, echo=FALSE}
+ggplot(Bootstrap_Means, aes(x=stat))+geom_density(fill='#019cdb', alpha=0.5)+labs(x='Bootstrap Means')
+```
+
+---
+
+## Bootstrap
+
+<p style="color:#e41a1c";>__Example__:</p> What if we had started with a different sample?
+
+```{r, eval=FALSE}
+NewSample <- Chicago %>%
+  sample_n(size=100)
+New_Bootstrap_Means <- NewSample %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+ggplot(New_Bootstrap_Means, aes(x=stat)) + 
+  geom_density(fill='#ffa300', alpha=0.5) + 
+  labs(x='NEW Bootstrap Means')
+```
+
+---
+
+## Bootstrap
+
+```{r, echo=FALSE}
+NewSample <- Chicago %>%
+  sample_n(size=100)
+New_Bootstrap_Means <- NewSample %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+ggplot(New_Bootstrap_Means, aes(x=stat)) + 
+  geom_density(fill='#ffa300', alpha=0.5) + 
+  labs(x='NEW Bootstrap Means')
+```
+
+---
+
+## Bootstrap
+
+Consider three bootstrap distributions. How do they compare?
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+Boot1 <- Chicago %>%
+  sample_n(size=100) %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+
+Boot2 <- Chicago %>%
+  sample_n(size=100) %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+
+Boot3 <- Chicago %>%
+  sample_n(size=100) %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+
+BootSamples <- rbind(Boot1 %>% mutate(Sample=1), 
+               Boot2 %>% mutate(Sample=2), 
+               Boot3 %>% mutate(Sample=3))
+ggplot(data=BootSamples, aes(x=stat)) +
+  geom_density(aes(fill=as.factor(Sample))) +
+  facet_grid(~Sample)+xlab('Bootstrap Distributions') +
+  scale_fill_brewer() + 
+  guides(fill=FALSE)
+```
+
+---
+
+## Bootstrap
+
+The quality of bootstrap estimates depends on:
+
+1. The quality of the original sample
+2. The number of resamples
+3. The shape of the original sample (outliers)
+
+---
+
+## Outliers
+
+__Outliers__ are unusual or extreme events. These can dramatically change sample statistics and affect our conclusions. 
+
+When you have an outlier:
+
+1. Try to understand the effect it may have on your analysis.
+2. Try to understand where the outlier may have come from.
+
+---
+
+## Outliers
+
+```{r, echo=FALSE, message=FALSE}
+ggplot(Chicago, aes(x=arr_delay))+geom_histogram()
+```
+
+---
+
+## Outliers
+
+```{r, echo=FALSE, message=FALSE}
+Chicago %>% filter(arr_delay>400) %>%
+  ggplot(aes(x=arr_delay))+geom_histogram()
+```
+
+---
+
+## Outliers
+
+```{r}
+Chicago %>% filter(arr_delay>400) %>%
+  select(month, day, dep_delay, arr_delay, carrier)
+```
+
+---
+
+## Outliers
+
+<p style="color:#e41a1c";>__Example__:</p> Are long delays (over 2 hours) more common in particular months?
+
+```{r, echo=FALSE}
+Chicago %>% mutate(long_delay = arr_delay>120) %>%
+  tally(~long_delay|month, data=.)
+```
+
+---
+
+## Outliers
+
+<p style="color:#e41a1c";>__Example__:</p> Are long delays (over 2 hours) more common with certain carriers?
+
+```{r, echo=FALSE}
+Chicago %>% mutate(long_delay = arr_delay>120) %>%
+  tally(~long_delay|carrier, data=.)
+```
+
+Should we remove the outliers?
+
+---
+
+## 95% bootstrap confidence interval
+
+```{r, eval=FALSE}
+Boot1 <- Chicago %>%
+  sample_n(size=100) %>% 
+  specify(response = arr_delay) %>%
+  generate(reps = 1000, type = "bootstrap") %>%
+  calculate(stat = "mean")
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+1. Based on the boostrap distribution, how could we estimate the standard error?
+2. Based on the bootstrap distribution, how could we use that standard error to come up with a confidence interval?
+
+```{r}
+Boot1 %>% skim(stat)
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+```{r}
+Boot1 %>% get_confidence_interval(level=0.95, 
+                                  type='se', 
+                                  point_estimate=4.06)
+
+4.06 + c(-2, 2)*4.3
+
+# Using a normal distribution, exact 95% interval is given by +/- 1.96 SE
+4.06 + c(-1.96, 1.96)*4.3
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+```{r, fig.width=10, fig.height=5}
+Boot1 %>% visualize()
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+__Percentile CI__: "Cut off" the lower 2.5% and upper 2.5% to get a range that contains 95% of all bootstrap resamples
+
+```{r}
+approximate_ci <- Boot1 %>% get_confidence_interval(level=0.95, 
+                                  type='se', 
+                                  point_estimate=4.06)
+percentile_ci <- Boot1 %>% get_confidence_interval(level=0.95, 
+                                  type='percentile')
+```
+
+How different will these be?
+
+---
+
+## 95% bootstrap confidence interval
+
+How different will these be?
+
+```{r}
+approximate_ci
+percentile_ci
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+```{r, fig.width=10, fig.height=5}
+Boot1 %>% visualize() + shade_ci(approximate_ci) + 
+  labs(subtitle='Approximate 95% CI')
+```
+
+---
+
+## 95% bootstrap confidence interval
+
+```{r, fig.width=10, fig.height=5}
+Boot1 %>% visualize() + shade_ci(percentile_ci) + 
+  labs(subtitle='Percentile 95% CI')
+```
+

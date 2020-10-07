@@ -1,0 +1,516 @@
+---
+title: 'Section 11: Clustering and Principal Components'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: ["style.css", 'hygge']
+    lib_dir: libs
+    nature:
+      highlightStyle: magula
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Modern Data Science with R_ Ch. 9: Unsupervised Learning
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+library(RColorBrewer)
+```
+
+---
+
+## Unsupervised learning
+
+.full-width[.content-box-yellow[__Unsupervised learning__: in unsupervised machine learning problems, there is no dedicated response variable(s)]]
+
+- Instead, we have a set of explanatory variables $X$, and we want to understand the relationships among them
+
+We'll consider two unsupervised techniques:
+
+1. Clustering
+2. Principal components
+
+How do we evaluate unsupervised learning models?
+
+---
+
+## Clustering v. principal components
+
+Clustering and principal components are two techniques that are designed to group the data together. The difference between them lies in _what_ is being grouped.
+
+.full-width[.content-box-yellow[__Cluster analysis__ refers to a set of techniques for grouping _observations_ together.]]
+
+.full-width[.content-box-blue[__Principal components analysis__ refers to a set of techniques for grouping _variables_ together.]]
+
+---
+
+## Hierarchical clustering
+
+.red[Example]: Can we cluster countries with similar characteristics?
+
+```{r}
+library(dslabs)
+data(gapminder)
+glimpse(gapminder)
+```
+
+---
+
+## Hierarchical clustering
+
+Since each country is repeated by year, let's choose a single year to focus on. 2015 is the most recent year with most variables included.
+
+The data is already "categorized" by continent and region (sub-continent). Clustering allows us to find other, possibly unconsidered, similarities between points.
+
+```{r}
+gapminder_2015 <- gapminder %>% filter(year==2015)
+names(gapminder_2015)
+```
+
+---
+
+## Hierarchical clustering
+
+1. Calculate a "distance" measure for every pair of countries. We'll start simply with a two-variable clustering on countries in the Americas.
+
+```{r}
+gap_fle <- gapminder_2015 %>%
+  filter(continent=='Americas') %>%
+  select(fertility, life_expectancy, country)
+rownames(gap_fle) <- gap_fle$country
+gap_dist <- dist(gap_fle[,1:2])
+## gap_dist
+```
+
+On your computers, look at what is contained in `gap_dist`.
+
+---
+
+## Hierarchical clustering
+
+```{r}
+gap_dist_matrix <- gap_dist %>% as.matrix()
+gap_dist_matrix[1:5, 1:5]
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+ggplot(gap_fle, aes(x=fertility, y=life_expectancy)) + geom_point()
+```
+
+---
+
+## Hierarchical clustering
+
+2. Each pair of points wih close distances is connected, distance by distance, until eventually all points are clustered together.
+
+```{r, eval=FALSE}
+## install.packages('ape')
+library(ape)
+clusters <-  hclust(gap_dist) 
+clusters
+plot(clusters)
+plot(clusters, hang=-1, cex=2)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+## install.packages('ape')
+library(ape)
+clusters <-  hclust(gap_dist) 
+plot(clusters, hang=-1, cex=0.5)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, fig.width=10, fig.height=5}
+plot(as.phylo(clusters), label.offset=1, cex=0.6)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, fig.width=10, fig.height=5, eval=FALSE}
+library(RColorBrewer)
+cols <- brewer.pal(6, 'Set1')
+clus6 = cutree(clusters, 6)
+plot(as.phylo(clusters), type = "fan", tip.color = cols[clus6],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, fig.width=10, fig.height=5, echo=FALSE}
+library(RColorBrewer)
+cols <- brewer.pal(6, 'Set1')
+clus6 = cutree(clusters, 4)
+plot(as.phylo(clusters), type = "fan", tip.color = cols[clus6],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## Example: Europe
+
+```{r, eval=FALSE}
+gap_fle_europe <- gapminder_2015 %>%
+  filter(continent=='Europe') %>%
+  select(fertility, life_expectancy, country)
+rownames(gap_fle_europe) <- gap_fle_europe$country
+gap_dist_europe <- dist(gap_fle_europe[,1:2])
+clusters_europe <-  hclust(gap_dist_europe) 
+cols <- brewer.pal(5, 'Set1')
+clus5_europe = cutree(clusters_europe, 5)
+plot(as.phylo(clusters_europe), type = "fan", tip.color = cols[clus5_europe],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## Example: Europe
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+gap_fle_europe <- gapminder_2015 %>%
+  filter(continent=='Europe') %>%
+  select(fertility, life_expectancy, country)
+rownames(gap_fle_europe) <- gap_fle_europe$country
+gap_dist_europe <- dist(gap_fle_europe[,1:2])
+clusters_europe <-  hclust(gap_dist_europe) 
+cols <- brewer.pal(5, 'Set1')
+clus5_europe = cutree(clusters_europe, 5)
+plot(as.phylo(clusters_europe), type = "fan", tip.color = cols[clus5_europe],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## Hierarchical clustering
+
+.red[Example]: Let's expand this, and add more variables. For the sake of being able to read my slides, I'll keep using just the data for the Americas.
+
+```{r, eval=FALSE}
+gap_americas2 <- gapminder %>% filter(year==2015) %>% 
+  filter(continent=='Americas') %>% 
+  select(country, infant_mortality, life_expectancy, fertility, population)
+rownames(gap_americas2) <- gap_americas2$country
+gap_dist <- dist(gap_americas2)
+clusters <-  hclust(gap_dist) 
+plot(clusters, hang=-1, cex=0.5)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+gap_americas2 <- gapminder %>% filter(year==2015) %>% filter(continent=='Americas')
+rownames(gap_americas2) <- gap_americas2$country
+gap_dist <- dist(gap_americas2)
+clusters <-  hclust(gap_dist) 
+plot(clusters, hang=-1, cex=0.5)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, eval=FALSE}
+library(RColorBrewer)
+cols <- brewer.pal(5, 'Set1')
+clus5 = cutree(clusters, 5)
+plot(as.phylo(clusters), type = "fan", tip.color = cols[clus5],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## Hierarchical clustering
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+library(RColorBrewer)
+cols <- brewer.pal(5, 'Set1')
+clus5 = cutree(clusters, 5)
+plot(as.phylo(clusters), type = "fan", tip.color = cols[clus5],
+     label.offset = 1, cex = 0.7)
+```
+
+---
+
+## k-means clustering
+
+Another option is to group cases without using a hierarchy.
+
+.red[Example]: Let's start with a two variable clustering: `infant_mortality` and `life_expectancy`.
+
+```{r, warning=FALSE, message=FALSE}
+##install.packages('mclust')
+library(mclust)
+k <- 5
+two_vars <- gap_americas2 %>% 
+  filter(infant_mortality != 'NA') %>% 
+  select(infant_mortality, life_expectancy)
+kmeans_clusters <- kmeans(two_vars, centers=k, nstart=10)
+```
+
+---
+
+## k-means clustering
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+kmeans_clusters$cluster <- as.factor(kmeans_clusters$cluster)
+ggplot(two_vars, aes(x=infant_mortality, y=life_expectancy)) + geom_point() + aes(color=kmeans_clusters$cluster, pch=kmeans_clusters$cluster) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k-means clustering
+
+.red[Example]: What happens if we use fewer clusters?
+
+```{r}
+k <- 3
+two_vars <- gap_americas2 %>% 
+  filter(infant_mortality != 'NA') %>% 
+  select(infant_mortality, life_expectancy)
+kmeans_clusters <- kmeans(two_vars, centers=k, nstart=10)
+```
+
+---
+
+## k-means clustering
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+kmeans_clusters$cluster <- as.factor(kmeans_clusters$cluster)
+ggplot(two_vars, aes(x=infant_mortality, y=life_expectancy)) + geom_point() + aes(color=kmeans_clusters$cluster, pch=kmeans_clusters$cluster) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## k-means clustering
+
+.red[Example]: Now, let's add a third variable: `fertility`.
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+three_vars <- gap_americas2 %>% filter(infant_mortality != 'NA') %>% select(infant_mortality, life_expectancy, fertility)
+kmeans_clusters <- kmeans(three_vars, centers=k, nstart=10)
+kmeans_clusters$cluster <- as.factor(kmeans_clusters$cluster)
+ggplot(three_vars, aes(x=fertility, y=life_expectancy)) + geom_point() + aes(color=kmeans_clusters$cluster, pch=kmeans_clusters$cluster) + scale_color_brewer(palette='Set1')
+```
+
+---
+
+## Hierarchical v. k-means clusters
+
+__Hierarchical clustering__:
+
+- Clusters based on: successive pairs
+- Number of clusters: drop a line across the hierarchy
+
+__k-means clustering__:
+
+- Clusters based on points nearest some "center"
+- Number of clusters: must be set _a priori_
+
+---
+
+## Dimension reduction
+
+Some variables in a data set carry _lots_ of information, others might carry _little to no_ information.
+
+1. How do we know which is which?
+2. What if variables are _related to one another_? How do we address that relationship?
+3. What if there are just _too many variables_? ($n < p$)
+
+---
+
+## Principal components
+
+.full-width[.content-box-yellow[__Principal components analysis__: Calculate linear combinations of our variables that explain a large proportion of the variability]]
+
+- Take a data set with lots of variables, and use matrix algebra to transform it into a data set with a few variables
+
+__Principal components__ are the "directions" where there is the most variance, that is, where the data is most spread out. 
+
+- Find the straight line projection in $p$-dimensional space that exhibits the most variability: this is the first principal component. Repeat.
+
+---
+
+## Principal components
+
+.red[Example]: The Happy Planet Index is a measure of a country's ecological and societal "well-being". 
+
+```{r}
+library(readxl)
+happyplanet2016 <- read_excel("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Data/happyplanet2016.xlsx")
+```
+
+---
+
+## Principal components
+
+Can we distill this down to a few important variables or ideas?
+
+```{r}
+glimpse(happyplanet2016)
+```
+
+---
+
+## Principal components
+
+```{r, eval=FALSE}
+happyplanet2 <- na.omit(happyplanet2016[,-8])
+happy_pca <- prcomp(x=happyplanet2[,3:10], 
+                    center=TRUE, scale=TRUE)
+summary(happy_pca)
+```
+
+---
+
+## Principal components
+
+```{r, echo=FALSE}
+happyplanet2 <- na.omit(happyplanet2016[,-8])
+happy_pca <- prcomp(x=happyplanet2[,3:10], 
+                    center=TRUE, scale=TRUE)
+summary(happy_pca)
+```
+
+---
+
+## Principal components
+
+```{r}
+happy_pca$rotation
+```
+
+---
+
+## Principal components (`factoextra`)
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+##install.packages('factoextra')
+library(factoextra)
+fviz_eig(happy_pca, main='Scree plot: Happy Planet Index')
+```
+
+---
+
+## Principal components (`factoextra`)
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=5}
+##install.packages('factoextra')
+library(factoextra)
+fviz_eig(happy_pca, main='Scree plot: Happy Planet Index')
+```
+
+---
+
+## Principal components (`factoextra`)
+
+`contrib`: Color by variable contributions to the PC
+
+```{r, eval=FALSE}
+fviz_pca_var(happy_pca, col.var = "contrib")
+```
+
+---
+
+## Principal components (`factoextra`)
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+fviz_pca_var(happy_pca, col.var = "contrib")
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+Sometimes you might want to use an R package that isn't hosted on CRAN. One common place to host R packages is GitHub. If you know the user's Git "repository", you can install the package using the `install_github` function from the `devtools` library.
+
+```{r, eval=FALSE}
+## install.packages('devtools')
+library(devtools)
+install_github("vqv/ggbiplot")
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+library(ggbiplot)
+ggbiplot(happy_pca)
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=5}
+library(ggbiplot)
+ggbiplot(happy_pca)
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r}
+ggbiplot(happy_pca, groups=happyplanet2$Region, ellipse=TRUE)
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r, eval=FALSE}
+ggbiplot(happy_pca, groups=happyplanet2$Region, 
+         ellipse=TRUE, choices=c(3,4))
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r, echo=FALSE, fig.width=10, fig.height=5}
+ggbiplot(happy_pca, groups=happyplanet2$Region, 
+         ellipse=TRUE, choices=c(3,4))
+```
+
+---
+
+## Principal components (`ggbiplot`)
+
+```{r, fig.width=10, fig.height=5}
+ggscreeplot(happy_pca)
+```
+
+---
+
+## Principal components
+
+Advantages:
+
+- Reduced dimensions
+- PCs are independent (no correlation)
+
+Disadvantages:
+
+- Interpretability! Sometimes PCs are easy to interpret. Other times... it's a stretch at best.

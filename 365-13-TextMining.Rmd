@@ -1,0 +1,579 @@
+---
+title: 'Section 13: Text Mining'
+author: 'MTH 365: Introduction to Data Science'
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  xaringan::moon_reader:
+    css: ["style.css", 'hygge']
+    lib_dir: libs
+    nature:
+      highlightStyle: magula
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+## Recommended Reading
+
+- _Tidy Text Mining with R_: Julia Silge and David Robinson (https://www.tidytextmining.com/)
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mdsr)
+library(RColorBrewer)
+library(tidytext)
+```
+
+Like the last section, this document takes a _very_ long time to knit. Don't do it until the end of class.
+
+---
+
+## Jeopardy!
+
+__Example__: Reddit user u/PandaPython1 posted web scraped data from the Jeopardy Archive (http://www.jarchive.com) containing the questions, categories, answers, clue locations, and earnings from all Jeopardy shows through the 2017 season. The data is saved as `Jeopardy2017.csv`.
+
+```{r}
+Jeopardy2017 <- read.csv("~/OneDrive - Creighton University/Fall 2019 Courses/MTH 365 - Intro to Data Science/Data/Jeopardy2017.csv")
+names(Jeopardy2017)
+```
+
+---
+
+## Jeopardy!
+
+If you're a future Jeopardy contestant, you might want to limit your studying:
+
+1. What categories are most common?
+2. What types of answers are most common?
+
+```{r}
+Jeopardy2017 %>% summarize(n=n_distinct(categories))
+```
+
+---
+
+## Most common categories and answers
+
+Options: 
+
+1. Review all 38,823 categories for classification manually
+2. Use text mining!
+
+.full-width[.content-box-yellow[__Text mining__: the process of extracting high-quality information from text. ]]
+
+- High-quality information is typically derived through the devising of patterns and trends through means such as statistical pattern learning.
+
+---
+
+## Most common categories and answers
+
+```{r, eval=FALSE}
+category_df <- tibble(question=1:nrow(Jeopardy2017),
+          category=as.character(Jeopardy2017$categories))
+tidy_category <- category_df %>% 
+  unnest_tokens(word, category) 
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n())
+```
+
+---
+
+## Most common categories and answers
+
+```{r, echo=FALSE}
+category_df <- tibble(question=1:nrow(Jeopardy2017),
+          category=as.character(Jeopardy2017$categories))
+tidy_category <- category_df %>% 
+  unnest_tokens(word, category) 
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n())
+```
+
+
+---
+
+## Most common categories and answers
+
+```{r, eval=FALSE}
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  arrange(desc(n))
+```
+
+---
+
+## Most common categories and answers
+
+```{r, echo=FALSE}
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  arrange(desc(n))
+```
+
+---
+
+## Stop words
+
+.full-width[.content-box-yellow[__Stop words__: words that are not useful for an analysis, typically extremely common words such as "the", "of", "to", and so forth in English]]
+
+```{r, eval=FALSE}
+data(stop_words)
+tidy_category <- tidy_category %>% anti_join(stop_words)
+```
+
+- What do you think `anti_join()` does?
+
+---
+
+```{r}
+head(tidy_category)
+data(stop_words)
+tidy_category <- tidy_category %>% anti_join(stop_words)
+head(tidy_category)
+```
+
+
+---
+
+## Stop words
+
+```{r, eval=FALSE}
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  arrange(desc(n))
+```
+
+---
+
+## Stop words
+
+```{r, echo=FALSE}
+tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  arrange(desc(n))
+```
+
+---
+
+## Most common categories
+
+```{r, eval=FALSE}
+top_categories <- tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  filter(n>=2000)
+top_categories %>% ggplot(aes(x=word, y=n)) + 
+  geom_col() + coord_flip()
+```
+
+---
+
+## Most common categories
+
+```{r, echo=FALSE}
+top_categories <- tidy_category %>% group_by(word) %>% 
+  summarize(n=n()) %>% 
+  filter(n>=2000)
+top_categories %>% ggplot(aes(x=word, y=n)) + 
+  geom_col() + coord_flip()
+```
+
+---
+
+## Category bigrams
+
+```{r, eval=FALSE}
+category_bigrams <- category_df %>%
+  unnest_tokens(bigram, category, token = "ngrams", n = 2)
+category_bigrams %>% group_by(bigram) %>% 
+  summarize(n=n()) %>% arrange(desc(n))
+```
+
+---
+
+## Category bigrams
+
+```{r, echo=FALSE}
+category_bigrams <- category_df %>%
+  unnest_tokens(bigram, category, token = "ngrams", n = 2)
+category_bigrams %>% group_by(bigram) %>% 
+  summarize(n=n()) %>% arrange(desc(n))
+```
+
+---
+
+## Category bigrams
+
+```{r}
+bigrams_separated <- category_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE) %>% 
+  filter(word1 != 'NA') %>% 
+  filter(word2 != 'NA')
+```
+
+---
+
+## Category bigrams
+
+```{r}
+bigram_counts
+```
+
+---
+
+## Category bigrams
+
+```{r, echo=FALSE}
+top_bigrams <- bigram_counts %>% filter(n>=300) %>% mutate(bigram = paste(word1, ' ', word2))
+top_bigrams %>% ggplot(aes(x=reorder(bigram, n), y=n)) + geom_col() + coord_flip()
+```
+
+---
+
+## Most common questions
+
+```{r, echo=FALSE, message=FALSE}
+#Jeopardy2017 %>% summarize(n=n_distinct(categories))
+
+question_df <- tibble(number=1:nrow(Jeopardy2017),
+                      question=as.character(Jeopardy2017$question))
+tidy_question <- question_df %>% unnest_tokens(word, question) 
+
+tidy_question <- tidy_question %>% anti_join(stop_words)
+
+top_questions <- tidy_question %>% group_by(word) %>% summarize(n=n()) %>% filter(n>=3000)
+top_questions %>% ggplot(aes(x=reorder(word, n), y=n)) + geom_col() + coord_flip()
+```
+
+---
+
+## Question bigrams
+
+```{r, echo=FALSE}
+question_bigrams <- question_df %>%
+  unnest_tokens(bigram, question, token = "ngrams", n = 2)
+
+bigrams_separated <- question_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE) %>% 
+  filter(word1 != 'NA') %>% 
+  filter(word2 != 'NA')
+
+top_bigrams <- bigram_counts %>% filter(n>=300) %>% mutate(bigram = paste(word1, ' ', word2))
+top_bigrams %>% ggplot(aes(x=reorder(bigram, n), y=n)) + geom_col() + coord_flip()
+```
+
+---
+
+## Most common answers
+
+__Example__: On your own or with a partner, use text mining to investigate the most common Jeopardy answers. If you're planning an appearance on Jeopardy, what should you brush up on?
+
+---
+
+## Most common answers
+
+```{r, echo=FALSE, message=FALSE}
+answer_df <- tibble(number=1:nrow(Jeopardy2017),
+                      answer=as.character(Jeopardy2017$answer))
+tidy_answer <- answer_df %>% unnest_tokens(word, answer) 
+
+tidy_answer <- tidy_answer %>% anti_join(stop_words)
+top_answers <- tidy_answer %>% group_by(word) %>% summarize(n=n()) %>% filter(n>=2000)
+
+answer_bigrams <- answer_df %>%
+  unnest_tokens(bigram, answer, token = "ngrams", n = 2)
+
+bigrams_separated <- answer_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE) %>% 
+  filter(word1 != 'NA') %>% 
+  filter(word2 != 'NA')
+
+top_bigrams <- bigram_counts %>% filter(n>=75) %>% mutate(bigram = paste(word1, ' ', word2))
+top_bigrams %>% filter(n > 50) %>% ggplot(aes(x=reorder(bigram, n), y=n)) + geom_col() + coord_flip()
+```
+
+---
+
+## Exploring Harry Potter
+
+__Example__: The R library `harrypotter` contains the text of all seven Harry Potter books.
+
+```{r, eval=FALSE}
+#devtools::install_github("bradleyboehmke/harrypotter")
+library(harrypotter)
+philosophers_stone[1]
+```
+
+```{r}
+library(harrypotter)
+```
+
+---
+
+## Sentiment analysis
+
+.full-width[.content-box-yellow[__Sentiment analysis__: the process of classifying a given text into a certain category, such as emotional states]]
+
+- Examples: anger, anticipation, constraining, disgust, fear, joy, litigious, negative, positive, sadness, superfluous, surprise, trust, uncertainty
+
+---
+
+## Sentiment analysis
+
+```{r}
+sentiments
+```
+
+---
+
+## Sentiment analysis
+
+UPDATE FOR NEW SENTIMENTS
+
+Lexicon choices:
+
+- `nrc`: categorizes words into categories of emotions (positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, trust)
+- `bing`: categorizes words into positive and negative categories
+- `AFINN`: assigns words a score between -5 and +5, with negative scores indicating negative sentiment (-5 and -4 words are NSFW)
+
+---
+
+## Sentiment analysis: `nrc`
+
+```{r}
+sentiments %>% filter(lexicon=='nrc')
+```
+
+---
+
+## Sentiment analysis: `bing`
+
+```{r}
+sentiments %>% filter(lexicon=='bing')
+```
+
+---
+
+## Sentiment analysis: `AFINN`
+
+```{r}
+sentiments %>% filter(lexicon=='AFINN')
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r}
+titles <- c("Philosopher's Stone", 
+            "Chamber of Secrets", 
+            "Prisoner of Azkaban",
+            "Goblet of Fire", 
+            "Order of the Phoenix", 
+            "Half-Blood Prince",
+            "Deathly Hallows")
+
+books <- list(philosophers_stone, 
+              chamber_of_secrets, 
+              prisoner_of_azkaban,
+              goblet_of_fire, 
+              order_of_the_phoenix, 
+              half_blood_prince,
+              deathly_hallows)
+  
+series <- tibble()
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r}
+for(i in seq_along(titles)) {
+        
+        clean <- tibble(chapter = seq_along(books[[i]]),
+                        text = books[[i]]) %>%
+             unnest_tokens(word, text) %>%
+             mutate(book = titles[i]) %>%
+             select(book, everything())
+
+        series <- rbind(series, clean)
+}
+
+series$book <- factor(series$book, levels = rev(titles))
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r, eval=FALSE}
+series %>%
+        right_join(get_sentiments("nrc")) %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r, echo=FALSE, message=FALSE}
+series %>%
+        right_join(get_sentiments("nrc")) %>%
+        filter(!is.na(sentiment)) %>%
+        count(sentiment, sort = TRUE)
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r, message=FALSE}
+sentiment_by_book <- series %>% group_by(book) %>% 
+  mutate(word_count = 1:n(), index = word_count%/%500+1) %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = index , sentiment) %>%
+  ungroup() %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative, 
+         book = factor(book, levels = titles))
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r}
+sentiment_by_book
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r, eval=FALSE}
+sentiment_by_book %>% ggplot(aes(index, sentiment, fill = book)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ book, ncol = 2, scales = "free_x")
+```
+
+---
+
+## 
+
+```{r, echo=FALSE, fig.height=9, fig.width=10}
+sentiment_by_book %>% ggplot(aes(index, sentiment, fill = book)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ book, ncol = 2, scales = "free_x")
+```
+
+---
+
+## "The Philosopher's Stone"
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+sentiment_by_book %>% filter(book=="Philosopher's Stone") %>% ggplot(aes(index, sentiment, fill = book)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) + 
+  labs(title="The Philosopher's Stone")
+```
+
+---
+
+## "The Deathly Hallows"
+
+```{r, echo=FALSE, fig.width=10, fig.height=6}
+sentiment_by_book %>% filter(book=="Deathly Hallows") %>% ggplot(aes(index, sentiment, fill = book)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) + 
+  labs(title="The Deathly Hollows")
+```
+
+---
+
+## Sentiments in Harry Potter
+
+```{r}
+sentiment_by_book %>% group_by(book) %>%
+  summarize(mean=mean(sentiment),
+            sd=sd(sentiment),
+            min=min(sentiment),
+            max=max(sentiment))
+```
+
+---
+
+## Sentiments in Harry Potter: `AFINN`
+
+```{r, eval=FALSE}
+sentiment_afinn <- series %>% group_by(book) %>% 
+  mutate(word_count = 1:n(), index = word_count%/%500+1) %>%
+  inner_join(get_sentiments("afinn")) %>%
+  count(book, index = index , score) %>%
+  ungroup() %>%
+  spread(score, n, fill = 0) %>%
+  mutate(score = -5*`-5`+-4*`-4`+-3*`-3`+
+           -2*`-2`+-1*`-1`+1*`1`+2*`2`+
+           3*`3`+4*`4`+5*`5`, 
+         book = factor(book, levels = titles))
+sentiment_afinn
+```
+
+---
+
+## Sentiments in Harry Potter: `AFINN`
+
+```{r, echo=FALSE, message=FALSE}
+sentiment_afinn <- series %>% group_by(book) %>% 
+  mutate(word_count = 1:n(), index = word_count%/%500+1) %>%
+  inner_join(get_sentiments("afinn")) %>%
+  count(book, index = index , score) %>%
+  ungroup() %>%
+  spread(score, n, fill = 0) %>%
+  mutate(score = -5*`-5`+-4*`-4`+-3*`-3`+
+           -2*`-2`+-1*`-1`+1*`1`+2*`2`+
+           3*`3`+4*`4`+5*`5`, 
+         book = factor(book, levels = titles))
+sentiment_afinn
+```
+
+---
+
+```{r, echo=FALSE, fig.width=10, fig.height=9}
+sentiment_afinn %>% ggplot(aes(index, score, fill = book)) +
+  geom_bar(alpha = 0.5, stat = "identity", show.legend = FALSE) +
+  facet_wrap(~ book, ncol = 2, scales = "free_x")
+```
+
+---
+
+## Sentiments in Harry Potter: `AFINN`
+
+```{r}
+sentiment_afinn %>% group_by(book) %>%
+  summarize(mean=mean(score),
+            sd=sd(score),
+            min=min(score),
+            max=max(score))
+```
